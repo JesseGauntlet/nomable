@@ -14,50 +14,18 @@ class VideoItem extends StatelessWidget {
 
   bool _isValidVideoUrl(String? url) {
     if (url == null) return false;
-    // Check for valid video URL that's not a mock/example URL
+    // Add Firebase Storage URL check
     return url.startsWith('http') &&
-        !url.contains('example.com') &&
-        !url.startsWith('sample_');
+        (url.contains('firebasestorage.googleapis.com') ||
+            url.contains('googleapis.com/v0/b/'));
   }
 
   Widget _buildVideoContent() {
-    // Check if we have a valid video URL
     if (_isValidVideoUrl(item.videoUrl)) {
       return FeedVideoPlayer(videoUrl: item.videoUrl!);
     }
-
-    // Show placeholder for dummy data
-    return Container(
-      color: Colors.black,
-      child: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Icon(
-              Icons.play_circle_outline,
-              color: Colors.white70,
-              size: 84,
-            ),
-            const SizedBox(height: 16),
-            Text(
-              'Video ${item.id}',
-              style: const TextStyle(
-                color: Colors.white70,
-                fontSize: 16,
-              ),
-            ),
-            const SizedBox(height: 8),
-            const Text(
-              '(Demo Mode)',
-              style: TextStyle(
-                color: Colors.white54,
-                fontSize: 12,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
+    // Fallback for invalid URLs
+    return const Center(child: Text('Invalid video URL'));
   }
 
   @override

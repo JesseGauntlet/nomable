@@ -13,21 +13,18 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Initialize Firebase for web
-  if (kIsWeb) {
-    await Firebase.initializeApp(
-      options: const FirebaseOptions(
-          apiKey: "AIzaSyBpVDlrS-G8D4bGwoAjlfAPLmsIfO2kFRs",
-          authDomain: "foodtalk-f468d.firebaseapp.com",
-          projectId: "foodtalk-f468d",
-          storageBucket: "foodtalk-f468d.appspot.com",
-          messagingSenderId: "181799688241",
-          appId: "1:181799688241:web:fa676f5a89ccbad8e2dd10"),
-    );
-  } else {
-    await Firebase.initializeApp(
-      options: DefaultFirebaseOptions.currentPlatform,
-    );
+  try {
+    if (Firebase.apps.isEmpty) {
+      await Firebase.initializeApp(
+        options: DefaultFirebaseOptions.currentPlatform,
+      );
+    }
+  } catch (e) {
+    if (e.toString().contains('duplicate-app')) {
+      print('Firebase already initialized');
+    } else {
+      rethrow;
+    }
   }
 
   runApp(const MyApp());

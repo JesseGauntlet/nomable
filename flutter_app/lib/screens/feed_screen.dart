@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/feed_item.dart';
-import '../services/api_service.dart';
 import '../widgets/video_item.dart';
 
 class FeedScreen extends StatefulWidget {
@@ -69,8 +69,9 @@ class _FeedScreenState extends State<FeedScreen> {
               id: doc.id,
               userId: doc['userId'],
               videoUrl: doc['videoUrl'],
-              likes: doc['likes'],
-              bookmarks: doc['bookmarks'],
+              description: doc['description'] ?? '',
+              likes: doc['likes'] ?? 0,
+              comments: doc['comments'] ?? 0,
             )));
         _hasMoreItems = snapshot.docs.length >= _itemsPerPage;
         _isLoading = false;

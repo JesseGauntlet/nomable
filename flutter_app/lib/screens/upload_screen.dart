@@ -42,16 +42,34 @@ class _UploadScreenState extends State<UploadScreen> {
       final storageRef = _storage
           .ref()
           .child('videos/$userId/${DateTime.now().millisecondsSinceEpoch}.mp4');
-      await storageRef.putFile(videoFile);
+
+      // Set proper metadata for video upload
+      final metadata = SettableMetadata(
+        contentType: 'video/mp4',
+        customMetadata: {'userId': userId},
+      );
+
+      // Upload with metadata
+      await storageRef.putFile(videoFile, metadata);
 
       // Get download URL
       return await storageRef.getDownloadURL();
     } catch (e) {
+      print('Firebase upload error details: $e'); // Add detailed logging
       throw Exception('Firebase upload failed: $e');
     }
   }
 
   Future<void> _uploadVideo() async {
+    // Check if user is authenticated
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please sign in to upload videos')),
+      );
+      return;
+    }
+
     if (_selectedVideoPath == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Please select a video first')),
@@ -68,8 +86,7 @@ class _UploadScreenState extends State<UploadScreen> {
       final videoUrl = await _uploadToFirebase(videoFile);
 
       // 2. Save metadata to Firestore
-      final userId = FirebaseAuth.instance.currentUser!.uid;
-      await _userService.addUserVideo(userId, videoUrl!);
+      await _userService.addUserVideo(user.uid, videoUrl!);
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -78,6 +95,7 @@ class _UploadScreenState extends State<UploadScreen> {
         Navigator.pop(context);
       }
     } catch (e) {
+      print('Upload error details: $e'); // Add detailed logging
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Upload failed: $e')),
