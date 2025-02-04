@@ -27,10 +27,13 @@ class _FeedVideoPlayerState extends State<FeedVideoPlayer> {
     _controller = VideoPlayerController.networkUrl(Uri.parse(widget.videoUrl));
     try {
       await _controller.initialize();
-      setState(() {
-        _isInitialized = true;
-      });
-      _controller.setLooping(true);
+      if (mounted) {
+        setState(() {
+          _isInitialized = true;
+        });
+        _controller.setLooping(true);
+        _controller.play();
+      }
     } catch (e) {
       debugPrint('Error initializing video player: $e');
     }
@@ -42,43 +45,67 @@ class _FeedVideoPlayerState extends State<FeedVideoPlayer> {
     super.dispose();
   }
 
+  void _togglePlayPause() {
+    setState(() {
+      if (_controller.value.isPlaying) {
+        _controller.pause();
+      } else {
+        _controller.play();
+      }
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     if (!_isInitialized) {
-      return const AspectRatio(
-        aspectRatio: 16 / 9,
-        child: Center(child: CircularProgressIndicator()),
+      return Container(
+        color: Colors.black,
+        child: const Center(
+          child: CircularProgressIndicator(
+            valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+          ),
+        ),
       );
     }
 
-    return GestureDetector(
-      onTap: () {
-        setState(() {
-          if (_controller.value.isPlaying) {
-            _controller.pause();
-          } else {
-            _controller.play();
-          }
-        });
-      },
-      child: AspectRatio(
-        aspectRatio: _controller.value.aspectRatio,
-        child: Stack(
-          alignment: Alignment.center,
-          children: [
-            VideoPlayer(_controller),
-            if (!_controller.value.isPlaying)
-              Container(
-                decoration: BoxDecoration(
-                  color: Colors.black.withOpacity(0.3),
-                ),
-                child: const Icon(
-                  Icons.play_arrow,
-                  size: 64,
-                  color: Colors.white,
+    return Container(
+      color: Colors.black,
+      child: Center(
+        child: AspectRatio(
+          aspectRatio: _controller.value.aspectRatio,
+          child: Stack(
+            children: [
+              // Video player
+              VideoPlayer(_controller),
+
+              // Center play/pause button with restricted tap zone
+              Center(
+                child: GestureDetector(
+                  onTap: _togglePlayPause,
+                  child: Container(
+                    width: 100,
+                    height: 100,
+                    color: Colors.transparent,
+                    child: !_controller.value.isPlaying
+                        ? Container(
+                            decoration: BoxDecoration(
+                              color: Colors.black26,
+                              shape: BoxShape.circle,
+                            ),
+                            child: const Center(
+                              child: Icon(
+                                Icons.play_arrow,
+                                size: 64,
+                                color: Colors.white,
+                              ),
+                            ),
+                          )
+                        : Container(),
+                  ),
                 ),
               ),
-          ],
+            ],
+          ),
         ),
       ),
     );
