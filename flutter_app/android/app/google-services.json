@@ -1,0 +1,46 @@
+{
+  "project_info": {
+    "project_number": "181799688241",
+    "project_id": "foodtalk-f468d",
+    "storage_bucket": "foodtalk-f468d.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:181799688241:android:2dd76dba3b6f6bc0e2dd10",
+        "android_client_info": {
+          "package_name": "com.example.flutter_app"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "181799688241-5r8pl8ag2pjqkba27siq4t69bn3ueq10.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDRWbX2Hxep0lw4F3oLeGrERMTlaTzmtgs"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "181799688241-5r8pl8ag2pjqkba27siq4t69bn3ueq10.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "181799688241-tr98gaedftuvdhm4f2otkvuqm4j6ef6t.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.flutterApp"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
