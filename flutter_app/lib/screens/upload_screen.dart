@@ -2,6 +2,10 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import '../services/api_service.dart';
+import 'package:firebase_storage/firebase_storage.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import '../services/user_service.dart';
 
 class UploadScreen extends StatefulWidget {
   const UploadScreen({super.key});
@@ -14,6 +18,9 @@ class _UploadScreenState extends State<UploadScreen> {
   final _descriptionController = TextEditingController();
   String? _selectedVideoPath;
   bool _isUploading = false;
+  final FirebaseStorage _storage = FirebaseStorage.instance;
+  final _firestore = FirebaseFirestore.instance;
+  final _userService = UserService();
 
   Future<void> _pickVideo() async {
     final picker = ImagePicker();
@@ -23,6 +30,24 @@ class _UploadScreenState extends State<UploadScreen> {
       setState(() {
         _selectedVideoPath = video.path;
       });
+    }
+  }
+
+  Future<String?> _uploadToFirebase(File videoFile) async {
+    try {
+      final userId = FirebaseAuth.instance.currentUser?.uid;
+      if (userId == null) throw Exception('User not authenticated');
+
+      // Upload to Firebase Storage
+      final storageRef = _storage
+          .ref()
+          .child('videos/$userId/${DateTime.now().millisecondsSinceEpoch}.mp4');
+      await storageRef.putFile(videoFile);
+
+      // Get download URL
+      return await storageRef.getDownloadURL();
+    } catch (e) {
+      throw Exception('Firebase upload failed: $e');
     }
   }
 
@@ -37,7 +62,15 @@ class _UploadScreenState extends State<UploadScreen> {
     setState(() => _isUploading = true);
 
     try {
-      await ApiService.uploadVideo(_selectedVideoPath!);
+      final videoFile = File(_selectedVideoPath!);
+
+      // 1. Upload to Firebase Storage
+      final videoUrl = await _uploadToFirebase(videoFile);
+
+      // 2. Save metadata to Firestore
+      final userId = FirebaseAuth.instance.currentUser!.uid;
+      await _userService.addUserVideo(userId, videoUrl!);
+
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Upload successful!')),

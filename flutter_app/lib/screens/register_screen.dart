@@ -37,6 +37,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
       // Save additional user info to Firestore
       await _userService.createOrUpdateUser(
         name: _nameController.text.trim(),
+        uid: userCredential.user!.uid,
       );
 
       if (mounted) {

@@ -43,43 +43,37 @@ class _FeedScreenState extends State<FeedScreen> {
   }
 
   Future<void> _loadFeed({bool refresh = false}) async {
-    print('FeedScreen: _loadFeed called with refresh=$refresh');
     if (!mounted) return;
-
-    // Don't load if we're already loading or if we've reached the end
-    if (_isLoading || _isLoadingMore || (!_hasMoreItems && !refresh)) return;
 
     setState(() {
       if (refresh) {
-        _isLoading = true;
         _feedItems.clear();
         _currentPage = 0;
         _hasMoreItems = true;
-      } else {
-        _isLoadingMore = true;
       }
-      _hasError = false;
+      _isLoading = true;
     });
 
     try {
-      final feedData = await ApiService.getFeed(
-        page: _currentPage,
-        limit: _itemsPerPage,
-      );
+      final query = FirebaseFirestore.instance
+          .collection('videos')
+          .orderBy('createdAt', descending: true)
+          .limit(_itemsPerPage);
+
+      final snapshot = await query.get();
 
       if (!mounted) return;
 
       setState(() {
-        if (feedData.isEmpty) {
-          _hasMoreItems = false;
-        } else {
-          final newItems =
-              feedData.map((item) => FeedItem.fromJson(item)).toList();
-          _feedItems.addAll(newItems);
-          _currentPage++;
-        }
+        _feedItems.addAll(snapshot.docs.map((doc) => FeedItem(
+              id: doc.id,
+              userId: doc['userId'],
+              videoUrl: doc['videoUrl'],
+              likes: doc['likes'],
+              bookmarks: doc['bookmarks'],
+            )));
+        _hasMoreItems = snapshot.docs.length >= _itemsPerPage;
         _isLoading = false;
-        _isLoadingMore = false;
       });
     } catch (e) {
       print('FeedScreen: Error loading feed: $e');
@@ -87,7 +81,6 @@ class _FeedScreenState extends State<FeedScreen> {
 
       setState(() {
         _isLoading = false;
-        _isLoadingMore = false;
         _hasError = true;
       });
 

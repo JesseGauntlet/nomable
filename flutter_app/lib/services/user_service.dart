@@ -25,22 +25,29 @@ class UserService {
   // Create or update user data
   Future<void> createOrUpdateUser({
     required String name,
+    String? uid,
     String? photoUrl,
     String? bio,
   }) async {
     try {
-      final user = _auth.currentUser;
-      if (user == null) throw Exception('No authenticated user found');
+      // Use provided uid or get from current user
+      final userId = uid ?? _auth.currentUser?.uid;
+      if (userId == null)
+        throw Exception('No user ID provided or authenticated user found');
 
-      await _firestore.collection('users').doc(user.uid).set({
+      // Always get email from current user if available
+      final userEmail = _auth.currentUser?.email;
+
+      await _firestore.collection('users').doc(userId).set({
         'name': name,
-        'email': user.email,
-        'photoUrl': photoUrl,
-        'bio': bio,
+        'email': userEmail,
+        if (photoUrl != null) 'photoUrl': photoUrl,
+        if (bio != null) 'bio': bio,
         'videosCount': 0,
         'followersCount': 0,
         'followingCount': 0,
         'updatedAt': FieldValue.serverTimestamp(),
+        if (uid != null) 'createdAt': FieldValue.serverTimestamp(),
       }, SetOptions(merge: true));
     } catch (e) {
       throw Exception('Failed to update user data: $e');
@@ -171,6 +178,24 @@ class UserService {
     } catch (e) {
       print('Error checking following status: $e');
       return false;
+    }
+  }
+
+  Future<void> addUserVideo(String userId, String videoUrl) async {
+    try {
+      await _firestore.collection('users').doc(userId).update({
+        'videosCount': FieldValue.increment(1),
+      });
+
+      await _firestore.collection('videos').add({
+        'userId': userId,
+        'videoUrl': videoUrl,
+        'createdAt': FieldValue.serverTimestamp(),
+        'likes': 0,
+        'bookmarks': 0,
+      });
+    } catch (e) {
+      throw Exception('Failed to record video: $e');
     }
   }
 }
