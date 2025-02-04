@@ -16,7 +16,8 @@ class FeedItem {
   });
 
   factory FeedItem.fromJson(Map<String, dynamic> json) {
-    return FeedItem(
+    print('FeedItem: Converting JSON to FeedItem: $json'); // Debug print
+    final item = FeedItem(
       id: json['id'] as String,
       userId: json['userId'] as String,
       videoUrl: json['videoUrl'] as String,
@@ -24,6 +25,9 @@ class FeedItem {
       likes: json['likes'] as int,
       comments: json['comments'] as int,
     );
+    print(
+        'FeedItem: Successfully created FeedItem with id: ${item.id}'); // Debug print
+    return item;
   }
 
   Map<String, dynamic> toJson() {
@@ -35,5 +39,10 @@ class FeedItem {
       'likes': likes,
       'comments': comments,
     };
+  }
+
+  @override
+  String toString() {
+    return 'FeedItem(id: $id, userId: $userId, description: $description)';
   }
 }

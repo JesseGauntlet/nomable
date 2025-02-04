@@ -21,6 +21,30 @@ fake_feed = [
         "description": "Quick and easy breakfast recipe",
         "likes": 800,
         "comments": 30
+    },
+    {
+        "id": "3",
+        "user_id": "user3",
+        "video_url": "sample_video_3.mp4",
+        "description": "Spicy Korean BBQ tacos fusion! 🌮🔥",
+        "likes": 2500,
+        "comments": 120
+    },
+    {
+        "id": "4",
+        "user_id": "user4",
+        "video_url": "sample_video_4.mp4",
+        "description": "5-minute sushi bowl hack 🍣",
+        "likes": 1500,
+        "comments": 75
+    },
+    {
+        "id": "5",
+        "user_id": "user5",
+        "video_url": "sample_video_5.mp4",
+        "description": "Ultimate chocolate lava cake dessert 🍫",
+        "likes": 3000,
+        "comments": 200
     }
 ]
 
