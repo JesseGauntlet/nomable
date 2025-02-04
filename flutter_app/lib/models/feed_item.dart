@@ -1,48 +1,63 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+
 class FeedItem {
   final String id;
   final String userId;
-  final String videoUrl;
+  final String mediaUrl;
+  final String mediaType;
+  final List<String> foodTags;
   final String description;
-  final int likes;
-  final int comments;
+  final int swipeCounts;
+  final int heartCount;
+  final int bookmarkCount;
+  final DateTime? createdAt;
 
   FeedItem({
     required this.id,
     required this.userId,
-    required this.videoUrl,
-    required this.description,
-    required this.likes,
-    required this.comments,
+    required this.mediaUrl,
+    required this.mediaType,
+    required this.foodTags,
+    this.description = '',
+    this.swipeCounts = 0,
+    this.heartCount = 0,
+    this.bookmarkCount = 0,
+    this.createdAt,
   });
 
-  factory FeedItem.fromJson(Map<String, dynamic> json) {
-    print('FeedItem: Converting JSON to FeedItem: $json'); // Debug print
-    final item = FeedItem(
-      id: json['id'] as String,
-      userId: json['userId'] as String,
-      videoUrl: json['videoUrl'] as String,
-      description: json['description'] as String,
-      likes: json['likes'] as int,
-      comments: json['comments'] as int,
+  factory FeedItem.fromFirestore(DocumentSnapshot doc) {
+    final data = doc.data() as Map<String, dynamic>;
+    return FeedItem(
+      id: doc.id,
+      userId: data['userId'] as String,
+      mediaUrl: data['mediaUrl'] as String,
+      mediaType: data['mediaType'] as String,
+      foodTags: List<String>.from(data['foodTags'] ?? []),
+      description: data['description'] as String? ?? '',
+      swipeCounts: data['swipeCounts'] as int? ?? 0,
+      heartCount: data['heartCount'] as int? ?? 0,
+      bookmarkCount: data['bookmarkCount'] as int? ?? 0,
+      createdAt: (data['createdAt'] as Timestamp?)?.toDate(),
     );
-    print(
-        'FeedItem: Successfully created FeedItem with id: ${item.id}'); // Debug print
-    return item;
   }
 
   Map<String, dynamic> toJson() {
     return {
       'id': id,
       'userId': userId,
-      'videoUrl': videoUrl,
+      'mediaUrl': mediaUrl,
+      'mediaType': mediaType,
+      'foodTags': foodTags,
       'description': description,
-      'likes': likes,
-      'comments': comments,
+      'swipeCounts': swipeCounts,
+      'heartCount': heartCount,
+      'bookmarkCount': bookmarkCount,
+      if (createdAt != null) 'createdAt': Timestamp.fromDate(createdAt!),
     };
   }
 
   @override
   String toString() {
-    return 'FeedItem(id: $id, userId: $userId, description: $description)';
+    return 'FeedItem(id: $id, userId: $userId, mediaType: $mediaType, description: $description)';
   }
 }

@@ -187,12 +187,16 @@ class UserService {
         'videosCount': FieldValue.increment(1),
       });
 
-      await _firestore.collection('videos').add({
+      await _firestore.collection('posts').add({
         'userId': userId,
-        'videoUrl': videoUrl,
+        'mediaUrl': videoUrl,
+        'mediaType': 'video',
+        'foodTags': [], // Can be updated later with food recognition
         'createdAt': FieldValue.serverTimestamp(),
-        'likes': 0,
-        'bookmarks': 0,
+        'description': '', // Optional, can be added later
+        'swipeCounts': 0,
+        'heartCount': 0,
+        'bookmarkCount': 0,
       });
     } catch (e) {
       throw Exception('Failed to record video: $e');

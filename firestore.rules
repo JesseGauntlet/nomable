@@ -25,9 +25,15 @@ service cloud.firestore {
           ['photoUrl', 'bio']
         );
       allow update: if isOwner(userId) &&
-        hasValidFields(
-          ['name', 'email', 'updatedAt', 'videosCount', 'followersCount', 'followingCount'],
-          ['photoUrl', 'bio']
+        (
+          hasValidFields(
+            ['name', 'email', 'updatedAt', 'videosCount', 'followersCount', 'followingCount'],
+            ['photoUrl', 'bio']
+          )
+          ||
+          // Special case for videosCount increments
+          (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['videosCount']) &&
+           request.resource.data.videosCount == resource.data.videosCount + 1)
         );
       allow delete: if false; // Prevent user deletion through client
 

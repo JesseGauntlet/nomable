@@ -1,14 +1,16 @@
 import 'package:flutter/material.dart';
 
 class VideoDescription extends StatelessWidget {
-  final String userId;
+  final String username;
   final String description;
+  final List<String> foodTags;
   final double bottomPadding;
 
   const VideoDescription({
     super.key,
-    required this.userId,
+    required this.username,
     required this.description,
+    required this.foodTags,
     this.bottomPadding = 100,
   });
 
@@ -25,7 +27,7 @@ class VideoDescription extends StatelessWidget {
           Row(
             children: [
               Text(
-                '@$userId',
+                '@$username',
                 style: const TextStyle(
                   color: Colors.white,
                   fontSize: 16,
@@ -53,16 +55,43 @@ class VideoDescription extends StatelessWidget {
               ),
             ],
           ),
-          const SizedBox(height: 8),
-          Text(
-            description,
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 14,
+          if (description.isNotEmpty) ...[
+            const SizedBox(height: 8),
+            Text(
+              description,
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 14,
+              ),
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
             ),
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-          ),
+          ],
+          if (foodTags.isNotEmpty) ...[
+            const SizedBox(height: 8),
+            Wrap(
+              spacing: 8,
+              children: foodTags
+                  .map((tag) => Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 4,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.2),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Text(
+                          '#$tag',
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 12,
+                          ),
+                        ),
+                      ))
+                  .toList(),
+            ),
+          ],
           const SizedBox(height: 12),
           Row(
             children: [
@@ -73,7 +102,7 @@ class VideoDescription extends StatelessWidget {
               ),
               const SizedBox(width: 4),
               Text(
-                'Original Sound - $userId',
+                'Original Sound - $username',
                 style: const TextStyle(
                   color: Colors.white,
                   fontSize: 13,

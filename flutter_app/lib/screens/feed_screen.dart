@@ -4,6 +4,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/feed_item.dart';
 import '../widgets/video_item.dart';
 
+// Feed screen of videos / image[] posts (todo)
 class FeedScreen extends StatefulWidget {
   const FeedScreen({super.key});
 
@@ -56,7 +57,7 @@ class _FeedScreenState extends State<FeedScreen> {
 
     try {
       final query = FirebaseFirestore.instance
-          .collection('videos')
+          .collection('posts')
           .orderBy('createdAt', descending: true)
           .limit(_itemsPerPage);
 
@@ -65,14 +66,8 @@ class _FeedScreenState extends State<FeedScreen> {
       if (!mounted) return;
 
       setState(() {
-        _feedItems.addAll(snapshot.docs.map((doc) => FeedItem(
-              id: doc.id,
-              userId: doc['userId'],
-              videoUrl: doc['videoUrl'],
-              description: doc['description'] ?? '',
-              likes: doc['likes'] ?? 0,
-              comments: doc['comments'] ?? 0,
-            )));
+        _feedItems
+            .addAll(snapshot.docs.map((doc) => FeedItem.fromFirestore(doc)));
         _hasMoreItems = snapshot.docs.length >= _itemsPerPage;
         _isLoading = false;
       });

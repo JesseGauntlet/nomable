@@ -21,8 +21,8 @@ class VideoItem extends StatelessWidget {
   }
 
   Widget _buildVideoContent() {
-    if (_isValidVideoUrl(item.videoUrl)) {
-      return FeedVideoPlayer(videoUrl: item.videoUrl!);
+    if (_isValidVideoUrl(item.mediaUrl)) {
+      return FeedVideoPlayer(videoUrl: item.mediaUrl);
     }
     // Fallback for invalid URLs
     return const Center(child: Text('Invalid video URL'));
@@ -52,17 +52,45 @@ class VideoItem extends StatelessWidget {
           ),
         ),
 
-        // Action buttons (like, comment, share)
-        VideoActionButtons(
-          userId: item.userId,
-          likes: item.likes,
-          comments: item.comments,
+        // Action buttons (like, bookmark, share)
+        Positioned(
+          right: 8,
+          bottom: MediaQuery.of(context).padding.bottom + 8,
+          child: VideoActionButtons(
+            heartCount: item.heartCount,
+            bookmarkCount: item.bookmarkCount,
+            onHeartPressed: () {
+              // TODO: Implement heart action
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Heart feature coming soon!')),
+              );
+            },
+            onBookmarkPressed: () {
+              // TODO: Implement bookmark action
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Bookmark feature coming soon!')),
+              );
+            },
+            onSharePressed: () {
+              // TODO: Implement share action
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Share feature coming soon!')),
+              );
+            },
+          ),
         ),
 
         // Video description and user info
-        VideoDescription(
-          userId: item.userId,
-          description: item.description,
+        Positioned(
+          left: 8,
+          right: 72,
+          bottom: MediaQuery.of(context).padding.bottom + 8,
+          child: VideoDescription(
+            username:
+                item.userId, // TODO: Get actual username from user profile
+            description: item.description,
+            foodTags: item.foodTags,
+          ),
         ),
       ],
     );
