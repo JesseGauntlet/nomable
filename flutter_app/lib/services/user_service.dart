@@ -50,6 +50,7 @@ class UserService {
         'videosCount': 0,
         'followersCount': 0,
         'followingCount': 0,
+        'heartCount': 0,
         'updatedAt': FieldValue.serverTimestamp(),
       };
 
