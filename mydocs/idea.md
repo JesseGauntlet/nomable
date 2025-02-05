@@ -13,11 +13,12 @@ User stories (6):
 3) Tagged with the food item
 4) See it on the feeds
 
-- I want to scroll through videos of food and have it learn my preferences
+- I want to scroll through videos of food and have it learn my current cravings
 1) Scroll through videos of food
 2) Like/Heart for current cravings
 3) Bookmark icon for something new I want to try later
-4) The app learns my preferences overall, and for the day (decays over time)
+4) The app learns my preferences for the day
+5) My preferences decay over time / can be manually reset
 
 - I want data on my preferences, and how they change over time
 1) See my current preferences
@@ -62,3 +63,4 @@ Stretch stories:
 
 - I want to be able to add music to my videos
 - I want AI to automatically tag foods in my videos
+- I want the videos to load faster (cache, reduce resolution, chunk videos, etc)
