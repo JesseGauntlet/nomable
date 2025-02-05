@@ -162,51 +162,30 @@ class _FeedScreenState extends State<FeedScreen> {
     if (_hasError && _feedItems.isEmpty) return _buildErrorState();
     if (_feedItems.isEmpty) return _buildEmptyState();
 
-    return Scaffold(
-      body: Stack(
-        children: [
-          // Full screen PageView
-          PageView.builder(
-            controller: _pageController,
-            physics: const PageScrollPhysics(),
-            scrollDirection: Axis.vertical,
-            itemCount: _feedItems.length + (_hasMoreItems ? 1 : 0),
-            onPageChanged: (index) {
-              print("PageView: Page changed to index $index");
-              if (index >= _feedItems.length - 2) {
-                _loadFeed();
-              }
-            },
-            itemBuilder: (context, index) {
-              if (index == _feedItems.length) {
-                return Container(
-                  color: Colors.black,
-                  child: const Center(
-                    child: CircularProgressIndicator(
-                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                    ),
-                  ),
-                );
-              }
-              return VideoItem(item: _feedItems[index]);
-            },
-          ),
-
-          // Top gradient overlay
-          Container(
-            height: MediaQuery.of(context).padding.top + 40,
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-                colors: [
-                  Colors.black.withOpacity(0.7),
-                  Colors.transparent,
-                ],
+    return Container(
+      color: Colors.black,
+      child: PageView.builder(
+        controller: _pageController,
+        scrollDirection: Axis.vertical,
+        itemCount: _feedItems.length + (_hasMoreItems ? 1 : 0),
+        onPageChanged: (index) {
+          if (index >= _feedItems.length - 2) {
+            _loadFeed();
+          }
+        },
+        itemBuilder: (context, index) {
+          if (index == _feedItems.length) {
+            return Container(
+              color: Colors.black,
+              child: const Center(
+                child: CircularProgressIndicator(
+                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                ),
               ),
-            ),
-          ),
-        ],
+            );
+          }
+          return VideoItem(item: _feedItems[index]);
+        },
       ),
     );
   }

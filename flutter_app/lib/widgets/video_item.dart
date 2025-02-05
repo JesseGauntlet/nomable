@@ -30,69 +30,77 @@ class VideoItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Stack(
-      fit: StackFit.expand,
-      children: [
-        // Video content (either player or placeholder)
-        _buildVideoContent(),
+    final bottomPadding = MediaQuery.of(context).padding.bottom;
 
-        // Gradient overlays for better text visibility
-        Positioned.fill(
-          child: DecoratedBox(
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.bottomCenter,
-                end: Alignment.center,
-                colors: [
-                  Colors.black.withOpacity(0.7),
-                  Colors.transparent,
-                ],
+    return Container(
+      color: Colors.black,
+      child: Stack(
+        fit: StackFit.expand,
+        children: [
+          // Video content (either player or placeholder)
+          Positioned.fill(
+            child: _buildVideoContent(),
+          ),
+
+          // Gradient overlays for better text visibility
+          Positioned.fill(
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.bottomCenter,
+                  end: Alignment.center,
+                  colors: [
+                    Colors.black.withOpacity(0.7),
+                    Colors.transparent,
+                  ],
+                ),
               ),
             ),
           ),
-        ),
 
-        // Action buttons (like, bookmark, share)
-        Positioned(
-          right: 8,
-          bottom: MediaQuery.of(context).padding.bottom + 8,
-          child: VideoActionButtons(
-            heartCount: item.heartCount,
-            bookmarkCount: item.bookmarkCount,
-            onHeartPressed: () {
-              // TODO: Implement heart action
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Heart feature coming soon!')),
-              );
-            },
-            onBookmarkPressed: () {
-              // TODO: Implement bookmark action
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Bookmark feature coming soon!')),
-              );
-            },
-            onSharePressed: () {
-              // TODO: Implement share action
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Share feature coming soon!')),
-              );
-            },
+          // Action buttons (like, bookmark, share)
+          Positioned(
+            right: 8,
+            bottom: bottomPadding + 8,
+            child: VideoActionButtons(
+              heartCount: item.heartCount,
+              bookmarkCount: item.bookmarkCount,
+              onHeartPressed: () {
+                // TODO: Implement heart action
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Heart feature coming soon!')),
+                );
+              },
+              onBookmarkPressed: () {
+                // TODO: Implement bookmark action
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                      content: Text('Bookmark feature coming soon!')),
+                );
+              },
+              onSharePressed: () {
+                // TODO: Implement share action
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Share feature coming soon!')),
+                );
+              },
+            ),
           ),
-        ),
 
-        // Video description and user info
-        Positioned(
-          left: 8,
-          right: 72,
-          bottom: MediaQuery.of(context).padding.bottom + 8,
-          child: VideoDescription(
-            username:
-                item.userId, // TODO: Get actual username from user profile
-            description: item.description,
-            foodTags: item.foodTags,
+          // Video description and user info
+          Positioned(
+            left: 8,
+            right: 72,
+            bottom: bottomPadding + 8,
+            child: VideoDescription(
+              username:
+                  item.userId, // TODO: Get actual username from user profile
+              description: item.description,
+              foodTags: item.foodTags,
+            ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 }

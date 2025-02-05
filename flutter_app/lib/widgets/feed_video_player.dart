@@ -58,53 +58,27 @@ class _FeedVideoPlayerState extends State<FeedVideoPlayer> {
   @override
   Widget build(BuildContext context) {
     if (!_isInitialized) {
-      return Container(
-        color: Colors.black,
-        child: const Center(
-          child: CircularProgressIndicator(
-            valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-          ),
+      return const Center(
+        child: CircularProgressIndicator(
+          valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
         ),
       );
     }
 
-    return Container(
-      color: Colors.black,
-      child: Center(
-        child: AspectRatio(
-          aspectRatio: _controller.value.aspectRatio,
-          child: Stack(
-            children: [
-              // Video player
-              VideoPlayer(_controller),
-
-              // Center play/pause button with restricted tap zone
-              Center(
-                child: GestureDetector(
-                  onTap: _togglePlayPause,
-                  child: Container(
-                    width: 100,
-                    height: 100,
-                    color: Colors.transparent,
-                    child: !_controller.value.isPlaying
-                        ? Container(
-                            decoration: BoxDecoration(
-                              color: Colors.black26,
-                              shape: BoxShape.circle,
-                            ),
-                            child: const Center(
-                              child: Icon(
-                                Icons.play_arrow,
-                                size: 64,
-                                color: Colors.white,
-                              ),
-                            ),
-                          )
-                        : Container(),
-                  ),
-                ),
+    return GestureDetector(
+      onTap: _togglePlayPause,
+      child: Container(
+        color: Colors.black,
+        child: Center(
+          child: SizedBox.expand(
+            child: FittedBox(
+              fit: BoxFit.cover,
+              child: SizedBox(
+                width: _controller.value.size.width,
+                height: _controller.value.size.height,
+                child: VideoPlayer(_controller),
               ),
-            ],
+            ),
           ),
         ),
       ),
