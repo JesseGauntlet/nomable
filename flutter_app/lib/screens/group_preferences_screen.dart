@@ -133,7 +133,7 @@ class _GroupPreferencesScreenState extends State<GroupPreferencesScreen> {
                                 child: Row(
                                   crossAxisAlignment: CrossAxisAlignment.center,
                                   children: [
-                                    // Food name
+                                    // Food name with fixed width
                                     SizedBox(
                                       width: 100,
                                       child: Text(
@@ -144,29 +144,33 @@ class _GroupPreferencesScreenState extends State<GroupPreferencesScreen> {
                                         ),
                                       ),
                                     ),
-                                    // Bar container with fixed width
-                                    SizedBox(
-                                      width: 200, // Fixed width for all bars
-                                      child: Stack(
-                                        children: [
-                                          Container(
-                                            height: 24,
-                                            width: 200 * percentage,
-                                            decoration: BoxDecoration(
-                                              color: Theme.of(context)
-                                                  .colorScheme
-                                                  .primary,
-                                              borderRadius:
-                                                  BorderRadius.circular(4),
-                                            ),
-                                          ),
-                                        ],
+                                    // Bar container with flexible width
+                                    Expanded(
+                                      child: LayoutBuilder(
+                                        builder: (context, constraints) {
+                                          return Stack(
+                                            children: [
+                                              Container(
+                                                height: 24,
+                                                width: constraints.maxWidth *
+                                                    percentage,
+                                                decoration: BoxDecoration(
+                                                  color: Theme.of(context)
+                                                      .colorScheme
+                                                      .primary,
+                                                  borderRadius:
+                                                      BorderRadius.circular(4),
+                                                ),
+                                              ),
+                                            ],
+                                          );
+                                        },
                                       ),
                                     ),
-                                    // Value
-                                    Padding(
-                                      padding:
-                                          const EdgeInsets.only(left: 16.0),
+                                    // Value with fixed padding
+                                    Container(
+                                      width: 50,
+                                      padding: const EdgeInsets.only(left: 8.0),
                                       child: Text(
                                         entry.value.toStringAsFixed(1),
                                         style: const TextStyle(
