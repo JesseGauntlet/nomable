@@ -22,28 +22,37 @@ service cloud.firestore {
       allow create: if isOwner(userId) && 
         hasValidFields(
           ['name', 'email', 'createdAt', 'updatedAt', 'videosCount', 'followersCount', 'followingCount', 'foodPreferences', 'currentCraving'],
-          ['photoUrl', 'bio']
+          ['photoUrl', 'bio', 'heartCount']
         ) &&
         request.resource.data.foodPreferences is map &&
         request.resource.data.currentCraving is string;
-      allow update: if isOwner(userId) &&
-        (
+      allow update: if isAuthenticated() && (
+        // Case 1: Owner updating their profile
+        (isOwner(userId) &&
           hasValidFields(
             ['name', 'email', 'updatedAt', 'videosCount', 'followersCount', 'followingCount', 'foodPreferences', 'currentCraving'],
-            ['photoUrl', 'bio']
+            ['photoUrl', 'bio', 'heartCount']
           ) &&
           request.resource.data.foodPreferences is map &&
           request.resource.data.currentCraving is string
-          ||
-          // Special case for videosCount increments
-          (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['videosCount']) &&
-           request.resource.data.videosCount == resource.data.videosCount + 1)
-          ||
-          // Special case for food preferences updates
-          (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['foodPreferences', 'currentCraving']) &&
-           request.resource.data.foodPreferences is map &&
-           request.resource.data.currentCraving is string)
-        );
+        ) ||
+        // Case 2: Owner incrementing their videosCount
+        (isOwner(userId) &&
+          request.resource.data.diff(resource.data).affectedKeys().hasOnly(['videosCount']) &&
+          request.resource.data.videosCount == resource.data.videosCount + 1
+        ) ||
+        // Case 3: Owner updating their food preferences
+        (isOwner(userId) &&
+          request.resource.data.diff(resource.data).affectedKeys().hasOnly(['foodPreferences', 'currentCraving']) &&
+          request.resource.data.foodPreferences is map &&
+          request.resource.data.currentCraving is string
+        ) ||
+        // Case 4: Anyone can increment heartCount (for likes)
+        (
+          request.resource.data.diff(resource.data).affectedKeys().hasOnly(['heartCount']) &&
+          request.resource.data.heartCount == resource.data.heartCount + 1
+        )
+      );
       allow delete: if false; // Prevent user deletion through client
 
       // Following subcollection

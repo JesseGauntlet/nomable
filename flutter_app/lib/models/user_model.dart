@@ -8,6 +8,7 @@ class UserModel {
   final int videosCount;
   final int followersCount;
   final int followingCount;
+  final int heartCount; // Total likes received
   final String? bio;
   final DateTime? createdAt;
   final DateTime? updatedAt;
@@ -22,6 +23,7 @@ class UserModel {
     this.videosCount = 0,
     this.followersCount = 0,
     this.followingCount = 0,
+    this.heartCount = 0,
     this.bio,
     this.createdAt,
     this.updatedAt,
@@ -39,6 +41,7 @@ class UserModel {
       videosCount: data['videosCount'] ?? 0,
       followersCount: data['followersCount'] ?? 0,
       followingCount: data['followingCount'] ?? 0,
+      heartCount: data['heartCount'] ?? 0,
       bio: data['bio'],
       createdAt: (data['createdAt'] as Timestamp?)?.toDate(),
       updatedAt: (data['updatedAt'] as Timestamp?)?.toDate(),
@@ -55,6 +58,7 @@ class UserModel {
       'videosCount': videosCount,
       'followersCount': followersCount,
       'followingCount': followingCount,
+      'heartCount': heartCount,
       'bio': bio,
       if (createdAt != null) 'createdAt': Timestamp.fromDate(createdAt!),
       if (updatedAt != null) 'updatedAt': Timestamp.fromDate(updatedAt!),
@@ -70,6 +74,7 @@ class UserModel {
     int? videosCount,
     int? followersCount,
     int? followingCount,
+    int? heartCount,
     String? bio,
     DateTime? createdAt,
     DateTime? updatedAt,
@@ -84,6 +89,7 @@ class UserModel {
       videosCount: videosCount ?? this.videosCount,
       followersCount: followersCount ?? this.followersCount,
       followingCount: followingCount ?? this.followingCount,
+      heartCount: heartCount ?? this.heartCount,
       bio: bio ?? this.bio,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,

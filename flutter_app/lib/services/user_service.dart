@@ -240,13 +240,28 @@ class UserService {
         throw Exception('User not authenticated');
       }
 
+      // Get the post to find the owner
+      final postDoc = await _firestore.collection('posts').doc(postId).get();
+      if (!postDoc.exists) {
+        throw Exception('Post not found');
+      }
+      final postData = postDoc.data() as Map<String, dynamic>;
+      final postOwnerId = postData['userId'] as String;
+
+      // Start a batch write
+      final batch = _firestore.batch();
+
       // 1. Increment the heartCount of the post in the 'posts' collection
-      await _firestore.collection('posts').doc(postId).update({
+      batch.update(_firestore.collection('posts').doc(postId), {
         'heartCount': FieldValue.increment(1),
       });
 
-      // 2. Prepare a map update to increment the count for each food tag in the user's foodPreferences
-      // Firestore allows updating nested fields using dotted notation.
+      // 2. Increment the heartCount of the post owner
+      batch.update(_firestore.collection('users').doc(postOwnerId), {
+        'heartCount': FieldValue.increment(1),
+      });
+
+      // 3. Prepare a map update to increment the count for each food tag in the user's foodPreferences
       Map<String, dynamic> updateData = {};
       for (String tag in foodTags) {
         // Convert tag to lowercase for consistency
@@ -254,11 +269,12 @@ class UserService {
             FieldValue.increment(1);
       }
 
-      // 3. Update the current user's document with the new food preferences
-      await _firestore
-          .collection('users')
-          .doc(currentUser.uid)
-          .update(updateData);
+      // 4. Update the current user's document with the new food preferences
+      batch.update(
+          _firestore.collection('users').doc(currentUser.uid), updateData);
+
+      // Commit all the updates atomically
+      await batch.commit();
     } catch (e) {
       throw Exception('Failed to heart post: $e');
     }

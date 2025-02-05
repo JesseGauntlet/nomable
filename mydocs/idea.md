@@ -34,8 +34,17 @@ User stories (6):
 5) Once the progress bar is full, my cravings data is saved for the day (visible from trends)
 
 - I want to have a friend's list
-1) See a list of my friends (and their profiles)
-2) Ability to add friends
+1) Ability to add friends by username
+2) Ability to send friend request
+3) Ability to accept friend request
+4) Ability to see list of friends
+
+- I want to have friend groups
+1) Ability to create a group
+2) Ability to add friends to a group
+3) Ability to remove friends from a group
+4) Ability to see a list of friends in a group
+5) Ability to see a list of groups I am in
 
 - I want to build consensus on what to eat in group settings
 1) Create a group

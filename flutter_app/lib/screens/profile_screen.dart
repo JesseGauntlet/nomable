@@ -144,9 +144,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                         children: [
-                          _buildStat('Videos', _user!.videosCount),
-                          _buildStat('Followers', _user!.followersCount),
                           _buildStat('Following', _user!.followingCount),
+                          _buildStat('Followers', _user!.followersCount),
+                          _buildStat('Likes', _user!.heartCount),
                         ],
                       ),
                       const SizedBox(height: 12),
