@@ -161,15 +161,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
                               labelColor: Theme.of(context).primaryColor,
                               unselectedLabelColor: Colors.grey,
                               labelStyle: const TextStyle(fontSize: 12),
-                              tabs: [
+                              tabs: const [
                                 Tab(
-                                    icon: const Icon(Icons.fastfood, size: 20),
+                                    icon: Icon(Icons.fastfood, size: 20),
                                     text: 'Cravings'),
                                 Tab(
-                                    icon: const Icon(Icons.bar_chart, size: 20),
+                                    icon: Icon(Icons.bar_chart, size: 20),
                                     text: 'Trends'),
                                 Tab(
-                                    icon: const Icon(Icons.grid_view, size: 20),
+                                    icon: Icon(Icons.grid_view, size: 20),
                                     text: 'Videos'),
                               ],
                             ),

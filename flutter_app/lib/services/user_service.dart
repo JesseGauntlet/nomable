@@ -79,14 +79,23 @@ class UserService {
   Future<List<Map<String, dynamic>>> getUserVideos(String userId) async {
     try {
       final videosSnapshot = await _firestore
-          .collection('videos')
+          .collection('posts')
           .where('userId', isEqualTo: userId)
-          .orderBy('createdAt', descending: true)
+          .where('mediaType', isEqualTo: 'video')
           .get();
 
-      return videosSnapshot.docs
+      // Sort the results in memory instead
+      final results = videosSnapshot.docs
           .map((doc) => {'id': doc.id, ...doc.data()})
           .toList();
+
+      results.sort((a, b) {
+        final aTime = (a['createdAt'] as Timestamp?)?.toDate() ?? DateTime(0);
+        final bTime = (b['createdAt'] as Timestamp?)?.toDate() ?? DateTime(0);
+        return bTime.compareTo(aTime); // descending order
+      });
+
+      return results;
     } catch (e) {
       print('Error getting user videos: $e');
       return [];
