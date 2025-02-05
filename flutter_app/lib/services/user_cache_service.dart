@@ -7,30 +7,47 @@ class UserCacheService {
 
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final Map<String, String> _userNameCache = {};
+  final Map<String, String?> _userPhotoCache = {};
 
-  Future<String> getUserName(String userId) async {
+  Future<(String, String?)> getUserInfo(String userId) async {
     // Check cache first
-    if (_userNameCache.containsKey(userId)) {
-      return _userNameCache[userId]!;
+    if (_userNameCache.containsKey(userId) &&
+        _userPhotoCache.containsKey(userId)) {
+      return (_userNameCache[userId]!, _userPhotoCache[userId]);
     }
 
     try {
       final doc = await _firestore.collection('users').doc(userId).get();
       if (!doc.exists) {
-        return 'Unknown User';
+        return ('Unknown User', null);
       }
 
       final name = doc.data()?['name'] as String? ?? 'Unknown User';
-      // Cache the result
+      final photoUrl = doc.data()?['photoUrl'] as String?;
+
+      // Cache the results
       _userNameCache[userId] = name;
-      return name;
+      _userPhotoCache[userId] = photoUrl;
+
+      return (name, photoUrl);
     } catch (e) {
-      print('Error fetching user name: $e');
-      return 'Unknown User';
+      print('Error fetching user info: $e');
+      return ('Unknown User', null);
     }
+  }
+
+  Future<String> getUserName(String userId) async {
+    final (name, _) = await getUserInfo(userId);
+    return name;
+  }
+
+  Future<String?> getUserPhoto(String userId) async {
+    final (_, photoUrl) = await getUserInfo(userId);
+    return photoUrl;
   }
 
   void clearCache() {
     _userNameCache.clear();
+    _userPhotoCache.clear();
   }
 }
