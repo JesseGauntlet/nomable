@@ -8,6 +8,7 @@ import 'screens/login_screen.dart';
 import 'screens/register_screen.dart';
 import 'screens/profile_screen.dart';
 import 'screens/friends_screen.dart';
+import 'screens/video_source_screen.dart';
 import 'services/auth_service.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 
@@ -102,7 +103,8 @@ class _MainScreenState extends State<MainScreen> {
           onPressed: () {
             Navigator.push(
               context,
-              MaterialPageRoute(builder: (context) => const UploadScreen()),
+              MaterialPageRoute(
+                  builder: (context) => const VideoSourceScreen()),
             );
           },
           child: const Icon(Icons.add),

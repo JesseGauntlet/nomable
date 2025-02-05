@@ -8,7 +8,8 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import '../services/user_service.dart';
 
 class UploadScreen extends StatefulWidget {
-  const UploadScreen({super.key});
+  final ImageSource source;
+  const UploadScreen({super.key, required this.source});
 
   @override
   State<UploadScreen> createState() => _UploadScreenState();
@@ -24,14 +25,28 @@ class _UploadScreenState extends State<UploadScreen> {
   final _userService = UserService();
   final List<String> _foodTags = [];
 
+  @override
+  void initState() {
+    super.initState();
+    // Automatically open video picker/camera when screen loads
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _pickVideo();
+    });
+  }
+
   Future<void> _pickVideo() async {
     final picker = ImagePicker();
-    final video = await picker.pickVideo(source: ImageSource.gallery);
+    final video = await picker.pickVideo(source: widget.source);
 
     if (video != null) {
       setState(() {
         _selectedVideoPath = video.path;
       });
+    } else {
+      // If no video was selected/captured, go back
+      if (mounted) {
+        Navigator.pop(context);
+      }
     }
   }
 
