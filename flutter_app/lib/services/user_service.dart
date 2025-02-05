@@ -82,20 +82,12 @@ class UserService {
           .collection('posts')
           .where('userId', isEqualTo: userId)
           .where('mediaType', isEqualTo: 'video')
+          .orderBy('createdAt', descending: true)
           .get();
 
-      // Sort the results in memory instead
-      final results = videosSnapshot.docs
+      return videosSnapshot.docs
           .map((doc) => {'id': doc.id, ...doc.data()})
           .toList();
-
-      results.sort((a, b) {
-        final aTime = (a['createdAt'] as Timestamp?)?.toDate() ?? DateTime(0);
-        final bTime = (b['createdAt'] as Timestamp?)?.toDate() ?? DateTime(0);
-        return bTime.compareTo(aTime); // descending order
-      });
-
-      return results;
     } catch (e) {
       print('Error getting user videos: $e');
       return [];
