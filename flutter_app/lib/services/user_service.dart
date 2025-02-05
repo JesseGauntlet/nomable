@@ -28,6 +28,8 @@ class UserService {
     String? uid,
     String? photoUrl,
     String? bio,
+    Map<String, int>? foodPreferences,
+    String? currentCraving,
   }) async {
     try {
       // Use provided uid or get from current user
@@ -38,17 +40,35 @@ class UserService {
       // Always get email from current user if available
       final userEmail = _auth.currentUser?.email;
 
-      await _firestore.collection('users').doc(userId).set({
+      final data = {
         'name': name,
         'email': userEmail,
         if (photoUrl != null) 'photoUrl': photoUrl,
         if (bio != null) 'bio': bio,
+        if (foodPreferences != null) 'foodPreferences': foodPreferences,
+        if (currentCraving != null) 'currentCraving': currentCraving,
         'videosCount': 0,
         'followersCount': 0,
         'followingCount': 0,
         'updatedAt': FieldValue.serverTimestamp(),
-        if (uid != null) 'createdAt': FieldValue.serverTimestamp(),
-      }, SetOptions(merge: true));
+      };
+
+      // Only set createdAt and initialize fields for new users
+      if (uid != null) {
+        data['createdAt'] = FieldValue.serverTimestamp();
+        // Initialize other fields for new users if not provided
+        if (foodPreferences == null) {
+          data['foodPreferences'] = {};
+        }
+        if (currentCraving == null) {
+          data['currentCraving'] = '';
+        }
+      }
+
+      await _firestore.collection('users').doc(userId).set(
+            data,
+            SetOptions(merge: true),
+          );
     } catch (e) {
       throw Exception('Failed to update user data: $e');
     }

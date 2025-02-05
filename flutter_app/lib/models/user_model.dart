@@ -9,6 +9,10 @@ class UserModel {
   final int followersCount;
   final int followingCount;
   final String? bio;
+  final DateTime? createdAt;
+  final DateTime? updatedAt;
+  final Map<String, int> foodPreferences;
+  final String currentCraving;
 
   UserModel({
     required this.id,
@@ -19,6 +23,10 @@ class UserModel {
     this.followersCount = 0,
     this.followingCount = 0,
     this.bio,
+    this.createdAt,
+    this.updatedAt,
+    this.foodPreferences = const {},
+    this.currentCraving = '',
   });
 
   factory UserModel.fromFirestore(DocumentSnapshot doc) {
@@ -32,6 +40,10 @@ class UserModel {
       followersCount: data['followersCount'] ?? 0,
       followingCount: data['followingCount'] ?? 0,
       bio: data['bio'],
+      createdAt: (data['createdAt'] as Timestamp?)?.toDate(),
+      updatedAt: (data['updatedAt'] as Timestamp?)?.toDate(),
+      foodPreferences: Map<String, int>.from(data['foodPreferences'] ?? {}),
+      currentCraving: data['currentCraving'] as String? ?? '',
     );
   }
 
@@ -44,6 +56,10 @@ class UserModel {
       'followersCount': followersCount,
       'followingCount': followingCount,
       'bio': bio,
+      if (createdAt != null) 'createdAt': Timestamp.fromDate(createdAt!),
+      if (updatedAt != null) 'updatedAt': Timestamp.fromDate(updatedAt!),
+      'foodPreferences': foodPreferences,
+      'currentCraving': currentCraving,
     };
   }
 
@@ -55,6 +71,10 @@ class UserModel {
     int? followersCount,
     int? followingCount,
     String? bio,
+    DateTime? createdAt,
+    DateTime? updatedAt,
+    Map<String, int>? foodPreferences,
+    String? currentCraving,
   }) {
     return UserModel(
       id: id,
@@ -65,6 +85,10 @@ class UserModel {
       followersCount: followersCount ?? this.followersCount,
       followingCount: followingCount ?? this.followingCount,
       bio: bio ?? this.bio,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+      foodPreferences: foodPreferences ?? this.foodPreferences,
+      currentCraving: currentCraving ?? this.currentCraving,
     );
   }
 }
