@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'group_members_screen.dart';
+import 'group_preferences_screen.dart';
 
 class GroupsScreen extends StatefulWidget {
   const GroupsScreen({Key? key}) : super(key: key);
@@ -154,10 +155,13 @@ class _GroupsScreenState extends State<GroupsScreen> {
                         )
                       : null,
                   onTap: () {
-                    // TODO: Navigate to group detail/consensus screen
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('Group consensus feature coming soon!'),
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => GroupPreferencesScreen(
+                          groupId: groupId,
+                          groupName: group['name'] ?? 'Unnamed Group',
+                        ),
                       ),
                     );
                   },
