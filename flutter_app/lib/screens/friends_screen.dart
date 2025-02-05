@@ -11,10 +11,10 @@ class FriendsScreen extends StatefulWidget {
   const FriendsScreen({Key? key}) : super(key: key);
 
   @override
-  _FriendsScreenState createState() => _FriendsScreenState();
+  FriendsScreenState createState() => FriendsScreenState();
 }
 
-class _FriendsScreenState extends State<FriendsScreen>
+class FriendsScreenState extends State<FriendsScreen>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
   final TextEditingController _searchController = TextEditingController();

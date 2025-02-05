@@ -16,13 +16,11 @@ class _FeedScreenState extends State<FeedScreen> {
   final List<FeedItem> _feedItems = [];
   bool _isLoading = false;
   bool _hasError = false;
-  bool _isLoadingMore = false;
   bool _hasMoreItems = true;
   final PageController _pageController = PageController();
 
   // Number of items to fetch per page
   static const int _itemsPerPage = 10;
-  int _currentPage = 0;
 
   @override
   void initState() {
@@ -49,7 +47,6 @@ class _FeedScreenState extends State<FeedScreen> {
     setState(() {
       if (refresh) {
         _feedItems.clear();
-        _currentPage = 0;
         _hasMoreItems = true;
       }
       _isLoading = true;
