@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import '../models/user_model.dart';
 import '../services/user_service.dart';
-import '../widgets/feed_video_player.dart';
 import '../services/auth_service.dart';
+import '../widgets/profile/profile_cravings_tab.dart';
+import '../widgets/profile/profile_trends_tab.dart';
+import '../widgets/profile/profile_videos_tab.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -172,92 +174,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
                               ],
                             ),
                             const SizedBox(height: 6),
-                            Container(
+                            SizedBox(
                               height: 255,
                               child: TabBarView(
                                 children: [
-                                  // Cravings view
-                                  Center(
-                                      child: Text("User Cravings Data Here")),
-                                  // Trends view
-                                  Center(
-                                      child: Text(
-                                          "Historical Trend Cravings Data Here")),
-                                  // Videos view
-                                  GridView.builder(
-                                    shrinkWrap: true,
-                                    physics:
-                                        const NeverScrollableScrollPhysics(),
-                                    padding: const EdgeInsets.all(8),
-                                    gridDelegate:
-                                        const SliverGridDelegateWithFixedCrossAxisCount(
-                                      crossAxisCount: 3,
-                                      crossAxisSpacing: 8,
-                                      mainAxisSpacing: 8,
-                                      childAspectRatio: 0.8,
-                                    ),
-                                    itemCount: _userVideos.length,
-                                    itemBuilder: (context, index) {
-                                      final video = _userVideos[index];
-                                      return GestureDetector(
-                                        onTap: () {
-                                          // TODO: Open video in full screen
-                                        },
-                                        child: Container(
-                                          decoration: BoxDecoration(
-                                            borderRadius:
-                                                BorderRadius.circular(8),
-                                            color: Colors.grey[300],
-                                          ),
-                                          child: Stack(
-                                            fit: StackFit.expand,
-                                            children: [
-                                              ClipRRect(
-                                                borderRadius:
-                                                    BorderRadius.circular(8),
-                                                child: FeedVideoPlayer(
-                                                  videoUrl: video['videoUrl'],
-                                                ),
-                                              ),
-                                              Positioned(
-                                                bottom: 8,
-                                                right: 8,
-                                                child: Container(
-                                                  padding: const EdgeInsets
-                                                      .symmetric(
-                                                      horizontal: 8,
-                                                      vertical: 4),
-                                                  decoration: BoxDecoration(
-                                                    color: Colors.black
-                                                        .withOpacity(0.7),
-                                                    borderRadius:
-                                                        BorderRadius.circular(
-                                                            12),
-                                                  ),
-                                                  child: Row(
-                                                    mainAxisSize:
-                                                        MainAxisSize.min,
-                                                    children: [
-                                                      const Icon(Icons.favorite,
-                                                          color: Colors.white,
-                                                          size: 16),
-                                                      const SizedBox(width: 4),
-                                                      Text(
-                                                        '${video['likes'] ?? 0}',
-                                                        style: const TextStyle(
-                                                            color: Colors.white,
-                                                            fontSize: 12),
-                                                      ),
-                                                    ],
-                                                  ),
-                                                ),
-                                              ),
-                                            ],
-                                          ),
-                                        ),
-                                      );
-                                    },
-                                  ),
+                                  const ProfileCravingsTab(),
+                                  const ProfileTrendsTab(),
+                                  ProfileVideosTab(videos: _userVideos),
                                 ],
                               ),
                             ),

@@ -11,19 +11,30 @@ User stories (6):
 1) Take a picture / video of food
 2) See it on my profile
 3) Tagged with the food item
-4) See it on the feeds of others
+4) See it on the feeds
+
+- I want to scroll through videos of food and have it learn my preferences
+1) Scroll through videos of food
+2) Like/Heart for current cravings
+3) Bookmark icon for something new I want to try later
+4) The app learns my preferences overall, and for the day (decays over time)
+
+- I want data on my preferences, and how they change over time
+1) See my current preferences
+2) See a graph of my preferences over time
+3) See a graph of the group's preferences over time
+4) See a graph of the most popular trending food items over time
+
+- I want a progress bar of my swipes
+1) Daily reset of progress bar
+2) Every time I swipe, the progress bar goes up
+3) The progress is displayed in a circular progress bar around my profile picture
+4) Once the progress bar is full, I can no longer swipe
+5) Once the progress bar is full, my cravings data is saved for the day (visible from trends)
 
 - I want to have a friend's list
 1) See a list of my friends (and their profiles)
 2) Ability to add friends
-
-- I want to scroll through videos of food and have it learn my preferences
-1) Scroll through videos of food
-2) Like, dislike, or neutral swipes (left, right, or up) for current cravings
-3) Heart like icon for long-term preferences
-4) Bookmark icon for something new I want to try later
-5) The app learns my preferences overall, and for the day
-6) See current preferences
 
 - I want to build consensus on what to eat in group settings
 1) Create a group
@@ -31,11 +42,6 @@ User stories (6):
 3) If a group member does not have updated cravings, the app will prompt them to update their cravings by swiping
 3) Large image of the top food item the group is craving displayed in the center of the screen
 4) Everyone gets 1 veto, which will display the next food
-
-- I want data on my preferences, and how they change over time
-1) See a graph of my preferences over time
-2) See a graph of the group's preferences over time
-3) See a graph of the most popular food items over time
 
 - I want to scroll through my feed and see a variety of food items
 1) See a list of food items that match my preferences
@@ -52,3 +58,7 @@ User stories (6):
 2) See a list of recipes that match the group's preferences
 3) See a list of ingredients I need to buy to make the recipe
 
+Stretch stories:
+
+- I want to be able to add music to my videos
+- I want AI to automatically tag foods in my videos
