@@ -18,7 +18,7 @@ Each user's document stores profile info, friend lists, and may include "summary
 
 ```
 /users/{userId} (Document)
-  • username: string
+  • name: string
   • email: string
   • profilePictureUrl: string
   • bio: string

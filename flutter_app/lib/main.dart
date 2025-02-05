@@ -116,6 +116,14 @@ class _MainScreenState extends State<MainScreen> {
             label: 'Feed',
           ),
           BottomNavigationBarItem(
+            icon: SizedBox.shrink(),
+            label: '',
+          ),
+          BottomNavigationBarItem(
+            icon: SizedBox.shrink(),
+            label: '',
+          ),
+          BottomNavigationBarItem(
             icon: Icon(Icons.person),
             label: 'Profile',
           ),
@@ -124,13 +132,28 @@ class _MainScreenState extends State<MainScreen> {
             label: 'Friends',
           ),
         ],
-        currentIndex: _selectedIndex,
+        currentIndex: _selectedIndex == 1 ? 3 : (_selectedIndex == 2 ? 4 : 0),
         selectedItemColor: Theme.of(context).colorScheme.primary,
         unselectedItemColor: Colors.grey,
+        showSelectedLabels: true,
+        showUnselectedLabels: true,
+        enableFeedback: true,
         type: BottomNavigationBarType.fixed,
         onTap: (index) {
           setState(() {
-            _selectedIndex = index;
+            switch (index) {
+              case 0:
+                _selectedIndex = 0;
+                break;
+              case 3:
+                _selectedIndex = 1;
+                break;
+              case 4:
+                _selectedIndex = 2;
+                break;
+              default:
+                break;
+            }
           });
         },
       ),

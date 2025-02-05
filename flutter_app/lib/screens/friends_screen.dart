@@ -315,13 +315,12 @@ class SearchResultsScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Query the 'users' collection with a case-insensitive contains match
-    // Convert the search query to lowercase for case-insensitive comparison
+    // Query the 'users' collection for matching name
     Query userQuery = FirebaseFirestore.instance
         .collection('users')
-        .orderBy('username')
-        .startAt([searchQuery.toLowerCase()]).endAt(
-            [searchQuery.toLowerCase() + '\uf8ff']);
+        .orderBy('name')
+        .where('name', isGreaterThanOrEqualTo: searchQuery)
+        .where('name', isLessThanOrEqualTo: searchQuery + '\uf8ff');
 
     return Scaffold(
       appBar: AppBar(
@@ -342,7 +341,22 @@ class SearchResultsScreen extends StatelessWidget {
           final filteredResults =
               results.where((doc) => doc.id != currentUser?.uid).toList();
           if (filteredResults.isEmpty) {
-            return const Center(child: Text('No users found'));
+            return Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Text('No users found'),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Try searching with a different name',
+                    style: TextStyle(
+                      color: Colors.grey[600],
+                      fontSize: 14,
+                    ),
+                  ),
+                ],
+              ),
+            );
           }
           return ListView.builder(
             itemCount: filteredResults.length,
@@ -350,7 +364,7 @@ class SearchResultsScreen extends StatelessWidget {
               var userData =
                   filteredResults[index].data() as Map<String, dynamic>;
               String userId = filteredResults[index].id;
-              String username = userData['username'] ?? 'No Name';
+              String name = userData['name'] ?? 'No Name';
               String? profileUrl = userData['profilePictureUrl'];
               return ListTile(
                 leading: CircleAvatar(
@@ -361,12 +375,10 @@ class SearchResultsScreen extends StatelessWidget {
                       ? const Icon(Icons.person)
                       : null,
                 ),
-                title: Text(username),
+                title: Text(name),
                 trailing: ElevatedButton(
                   onPressed: () async {
                     // On pressing add, send a friend request
-                    // We use the _sendFriendRequest method from FriendsScreen,
-                    // but for simplicity we call it directly here.
                     await FirebaseFirestore.instance
                         .collection('users')
                         .doc(userId)
