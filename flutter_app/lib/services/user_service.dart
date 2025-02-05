@@ -227,4 +227,40 @@ class UserService {
       throw Exception('Failed to record video: $e');
     }
   }
+
+  // Heart a post and update user's food preferences based on the post's foodTags
+  Future<void> heartPost({
+    required String postId,
+    required List<String> foodTags,
+  }) async {
+    try {
+      // Ensure the user is authenticated
+      final currentUser = _auth.currentUser;
+      if (currentUser == null) {
+        throw Exception('User not authenticated');
+      }
+
+      // 1. Increment the heartCount of the post in the 'posts' collection
+      await _firestore.collection('posts').doc(postId).update({
+        'heartCount': FieldValue.increment(1),
+      });
+
+      // 2. Prepare a map update to increment the count for each food tag in the user's foodPreferences
+      // Firestore allows updating nested fields using dotted notation.
+      Map<String, dynamic> updateData = {};
+      for (String tag in foodTags) {
+        // Convert tag to lowercase for consistency
+        updateData['foodPreferences.${tag.toLowerCase()}'] =
+            FieldValue.increment(1);
+      }
+
+      // 3. Update the current user's document with the new food preferences
+      await _firestore
+          .collection('users')
+          .doc(currentUser.uid)
+          .update(updateData);
+    } catch (e) {
+      throw Exception('Failed to heart post: $e');
+    }
+  }
 }

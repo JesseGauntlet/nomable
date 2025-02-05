@@ -68,12 +68,18 @@ service cloud.firestore {
           ['userId', 'mediaUrl', 'mediaType', 'foodTags', 'createdAt'],
           ['description', 'location', 'swipeCounts', 'heartCount', 'bookmarkCount']
         );
-      allow update: if isSignedIn() && 
-        resource.data.userId == request.auth.uid &&
+      allow update: if isSignedIn() && (
+        // Allow owner to update all fields
+        (resource.data.userId == request.auth.uid &&
         hasValidFields(
           ['userId', 'mediaUrl', 'mediaType', 'foodTags'],
           ['description', 'location', 'swipeCounts', 'heartCount', 'bookmarkCount']
-        );
+        ))
+        ||
+        // Allow any authenticated user to update only heartCount
+        (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['heartCount']) &&
+         request.resource.data.heartCount == resource.data.heartCount + 1)
+      );
       allow delete: if isSignedIn() && resource.data.userId == request.auth.uid;
     }
 

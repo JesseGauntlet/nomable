@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../models/feed_item.dart';
 import '../services/user_cache_service.dart';
+import '../services/user_service.dart';
 import 'video_action_buttons.dart';
 import 'video_description.dart';
 import 'feed_video_player.dart';
@@ -19,6 +20,7 @@ class VideoItem extends StatefulWidget {
 
 class _VideoItemState extends State<VideoItem> {
   final _userCache = UserCacheService();
+  final _userService = UserService();
   String? _username;
   bool _isLoadingUsername = true;
 
@@ -52,6 +54,28 @@ class _VideoItemState extends State<VideoItem> {
     }
     // Fallback for invalid URLs
     return const Center(child: Text('Invalid video URL'));
+  }
+
+  Future<void> _handleHeartPress() async {
+    try {
+      await _userService.heartPost(
+        postId: widget.item.id,
+        foodTags: widget.item.foodTags,
+      );
+
+      // Update the UI to show the heart count increased
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Added to your food preferences!')),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to heart post: $e')),
+        );
+      }
+    }
   }
 
   @override
@@ -91,12 +115,7 @@ class _VideoItemState extends State<VideoItem> {
             child: VideoActionButtons(
               heartCount: widget.item.heartCount,
               bookmarkCount: widget.item.bookmarkCount,
-              onHeartPressed: () {
-                // TODO: Implement heart action
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Heart feature coming soon!')),
-                );
-              },
+              onHeartPressed: _handleHeartPress,
               onBookmarkPressed: () {
                 // TODO: Implement bookmark action
                 ScaffoldMessenger.of(context).showSnackBar(
