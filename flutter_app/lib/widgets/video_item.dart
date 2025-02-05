@@ -1,16 +1,42 @@
 import 'package:flutter/material.dart';
 import '../models/feed_item.dart';
+import '../services/user_cache_service.dart';
 import 'video_action_buttons.dart';
 import 'video_description.dart';
 import 'feed_video_player.dart';
 
-class VideoItem extends StatelessWidget {
+class VideoItem extends StatefulWidget {
   final FeedItem item;
 
   const VideoItem({
     super.key,
     required this.item,
   });
+
+  @override
+  State<VideoItem> createState() => _VideoItemState();
+}
+
+class _VideoItemState extends State<VideoItem> {
+  final _userCache = UserCacheService();
+  String? _username;
+  bool _isLoadingUsername = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadUsername();
+  }
+
+  Future<void> _loadUsername() async {
+    final username = await _userCache.getUserName(widget.item.userId);
+    if (mounted) {
+      setState(() {
+        _username = username;
+        _isLoadingUsername = false;
+      });
+    }
+  }
 
   bool _isValidVideoUrl(String? url) {
     if (url == null) return false;
@@ -21,8 +47,8 @@ class VideoItem extends StatelessWidget {
   }
 
   Widget _buildVideoContent() {
-    if (_isValidVideoUrl(item.mediaUrl)) {
-      return FeedVideoPlayer(videoUrl: item.mediaUrl);
+    if (_isValidVideoUrl(widget.item.mediaUrl)) {
+      return FeedVideoPlayer(videoUrl: widget.item.mediaUrl);
     }
     // Fallback for invalid URLs
     return const Center(child: Text('Invalid video URL'));
@@ -63,8 +89,8 @@ class VideoItem extends StatelessWidget {
             right: 8,
             bottom: bottomPadding + 8,
             child: VideoActionButtons(
-              heartCount: item.heartCount,
-              bookmarkCount: item.bookmarkCount,
+              heartCount: widget.item.heartCount,
+              bookmarkCount: widget.item.bookmarkCount,
               onHeartPressed: () {
                 // TODO: Implement heart action
                 ScaffoldMessenger.of(context).showSnackBar(
@@ -93,10 +119,10 @@ class VideoItem extends StatelessWidget {
             right: 72,
             bottom: bottomPadding + 8,
             child: VideoDescription(
-              username:
-                  item.userId, // TODO: Get actual username from user profile
-              description: item.description,
-              foodTags: item.foodTags,
+              username: _username ?? widget.item.userId,
+              isLoadingUsername: _isLoadingUsername,
+              description: widget.item.description,
+              foodTags: widget.item.foodTags,
             ),
           ),
         ],

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 class VideoDescription extends StatelessWidget {
   final String username;
+  final bool isLoadingUsername;
   final String description;
   final List<String> foodTags;
   final double bottomPadding;
@@ -9,6 +10,7 @@ class VideoDescription extends StatelessWidget {
   const VideoDescription({
     super.key,
     required this.username,
+    this.isLoadingUsername = false,
     required this.description,
     required this.foodTags,
     this.bottomPadding = 100,
@@ -26,14 +28,24 @@ class VideoDescription extends StatelessWidget {
         children: [
           Row(
             children: [
-              Text(
-                '@$username',
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
+              if (isLoadingUsername)
+                Container(
+                  width: 80,
+                  height: 16,
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.2),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                )
+              else
+                Text(
+                  '@$username',
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
-              ),
               const SizedBox(width: 8),
               Container(
                 padding: const EdgeInsets.symmetric(
