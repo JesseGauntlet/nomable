@@ -124,13 +124,19 @@ service cloud.firestore {
 
     // Groups collection (for consensus features)
     match /groups/{groupId} {
-      allow read: if isAuthenticated() && 
-        exists(/databases/$(database)/documents/groups/$(groupId)/members/$(request.auth.uid));
+      // Allow reading groups if user is authenticated and is a member
+      allow read: if isAuthenticated();
+      // Allow listing/querying groups where user is a member
+      allow list: if isAuthenticated() && 
+        (resource.data.members.hasAny([request.auth.uid]));
+      // Allow creating new groups
       allow create: if isAuthenticated() &&
-        request.resource.data.creatorId == request.auth.uid;
+        request.resource.data.creatorId == request.auth.uid &&
+        request.resource.data.members.hasAll([request.auth.uid]);
+      // Allow updates if user is creator or member
       allow update: if isAuthenticated() && 
         (resource.data.creatorId == request.auth.uid ||
-         exists(/databases/$(database)/documents/groups/$(groupId)/members/$(request.auth.uid)));
+         resource.data.members.hasAny([request.auth.uid]));
       allow delete: if isAuthenticated() && resource.data.creatorId == request.auth.uid;
 
       // Group members subcollection

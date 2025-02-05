@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'groups_screen.dart';
 
 // FriendsScreen widget implements the friends list, pending friend requests,
 // and a search functionality to add new friends.
@@ -277,6 +278,19 @@ class _FriendsScreenState extends State<FriendsScreen>
       appBar: AppBar(
         title: const Text('Friends'),
         backgroundColor: Theme.of(context).colorScheme.surface,
+        actions: [
+          // Add Groups button in the app bar
+          IconButton(
+            icon: const Icon(Icons.groups),
+            tooltip: 'Food Groups',
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const GroupsScreen()),
+              );
+            },
+          ),
+        ],
         bottom: TabBar(
           controller: _tabController,
           indicatorColor: Theme.of(context).colorScheme.primary,
