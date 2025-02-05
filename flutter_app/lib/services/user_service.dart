@@ -201,7 +201,12 @@ class UserService {
     }
   }
 
-  Future<void> addUserVideo(String userId, String videoUrl) async {
+  Future<void> addUserVideo(
+    String userId,
+    String videoUrl, {
+    String description = '',
+    List<String> foodTags = const [],
+  }) async {
     try {
       await _firestore.collection('users').doc(userId).update({
         'videosCount': FieldValue.increment(1),
@@ -211,9 +216,9 @@ class UserService {
         'userId': userId,
         'mediaUrl': videoUrl,
         'mediaType': 'video',
-        'foodTags': [], // Can be updated later with food recognition
+        'foodTags': foodTags,
         'createdAt': FieldValue.serverTimestamp(),
-        'description': '', // Optional, can be added later
+        'description': description,
         'swipeCounts': 0,
         'heartCount': 0,
         'bookmarkCount': 0,

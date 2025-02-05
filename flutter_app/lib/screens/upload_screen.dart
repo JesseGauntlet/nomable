@@ -16,11 +16,13 @@ class UploadScreen extends StatefulWidget {
 
 class _UploadScreenState extends State<UploadScreen> {
   final _descriptionController = TextEditingController();
+  final _tagController = TextEditingController();
   String? _selectedVideoPath;
   bool _isUploading = false;
   final FirebaseStorage _storage = FirebaseStorage.instance;
   final _firestore = FirebaseFirestore.instance;
   final _userService = UserService();
+  final List<String> _foodTags = [];
 
   Future<void> _pickVideo() async {
     final picker = ImagePicker();
@@ -85,8 +87,13 @@ class _UploadScreenState extends State<UploadScreen> {
       // 1. Upload to Firebase Storage
       final videoUrl = await _uploadToFirebase(videoFile);
 
-      // 2. Save metadata to Firestore
-      await _userService.addUserVideo(user.uid, videoUrl!);
+      // 2. Save metadata to Firestore with food tags
+      await _userService.addUserVideo(
+        user.uid,
+        videoUrl!,
+        description: _descriptionController.text,
+        foodTags: _foodTags,
+      );
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -108,9 +115,20 @@ class _UploadScreenState extends State<UploadScreen> {
     }
   }
 
+  void _addTag() {
+    final tag = _tagController.text.trim();
+    if (tag.isNotEmpty && !_foodTags.contains(tag)) {
+      setState(() {
+        _foodTags.add(tag);
+        _tagController.clear();
+      });
+    }
+  }
+
   @override
   void dispose() {
     _descriptionController.dispose();
+    _tagController.dispose();
     super.dispose();
   }
 
@@ -146,6 +164,45 @@ class _UploadScreenState extends State<UploadScreen> {
               ),
               maxLines: 3,
             ),
+            const SizedBox(height: 16),
+            Row(
+              children: [
+                Expanded(
+                  child: TextField(
+                    controller: _tagController,
+                    decoration: const InputDecoration(
+                      labelText: 'Add Food Tags',
+                      hintText: 'Enter a food tag',
+                      border: OutlineInputBorder(),
+                    ),
+                    onSubmitted: (_) => _addTag(),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                IconButton(
+                  onPressed: _addTag,
+                  icon: const Icon(Icons.add),
+                  tooltip: 'Add Tag',
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            if (_foodTags.isNotEmpty)
+              Wrap(
+                spacing: 8,
+                runSpacing: 4,
+                children: _foodTags
+                    .map((tag) => Chip(
+                          label: Text(tag),
+                          deleteIcon: const Icon(Icons.close, size: 18),
+                          onDeleted: () {
+                            setState(() {
+                              _foodTags.remove(tag);
+                            });
+                          },
+                        ))
+                    .toList(),
+              ),
             const SizedBox(height: 24),
             ElevatedButton(
               onPressed: _isUploading ? null : _uploadVideo,
