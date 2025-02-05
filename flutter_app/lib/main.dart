@@ -7,6 +7,7 @@ import 'screens/upload_screen.dart';
 import 'screens/login_screen.dart';
 import 'screens/register_screen.dart';
 import 'screens/profile_screen.dart';
+import 'screens/friends_screen.dart';
 import 'services/auth_service.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 
@@ -88,6 +89,7 @@ class _MainScreenState extends State<MainScreen> {
   static const List<Widget> _screens = [
     FeedScreen(),
     ProfileScreen(),
+    FriendsScreen(),
   ];
 
   @override
@@ -117,8 +119,15 @@ class _MainScreenState extends State<MainScreen> {
             icon: Icon(Icons.person),
             label: 'Profile',
           ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.people),
+            label: 'Friends',
+          ),
         ],
         currentIndex: _selectedIndex,
+        selectedItemColor: Theme.of(context).colorScheme.primary,
+        unselectedItemColor: Colors.grey,
+        type: BottomNavigationBarType.fixed,
         onTap: (index) {
           setState(() {
             _selectedIndex = index;
