@@ -1,7 +1,7 @@
 rules_version = '2';
 service firebase.storage {
   match /b/{bucket}/o {
-    // Only allow uploading to a folder named after the user's UID.
+    // Allow access to videos directory
     match /videos/{userId}/{filename} {
       // Allow read if the user is authenticated.
       allow read: if request.auth != null;
@@ -10,6 +10,13 @@ service firebase.storage {
                   && request.auth.uid == userId
                   && request.resource.size < 100 * 1024 * 1024 // Limit file size to 100MB
                   && request.resource.contentType.matches('video/.*');
+    }
+    
+    // Allow access to previews directory
+    match /previews/{userId}/{filename} {
+      allow read: if request.auth != null;
+      // Only allow Cloud Functions to write to previews
+      allow write: if request.auth.token.firebase.sign_in_provider == 'service_account';
     }
   }
 } 

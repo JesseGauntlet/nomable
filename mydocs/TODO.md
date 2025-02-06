@@ -17,4 +17,13 @@ Features
 2) Daily resets of cravings / manual test reset button
 
 Thursday 2/6
-1) Video optimizations, resolution / compression for speed?
+1) Video optimizations: Client-side caching (done)
+2) Video optimizations: Video compression
+3) Video optimizaitons: Use lower resolution videos
+4) iOs build
+
+Friday 2/7
+1) Firebase beta distributions
+
+Beyond
+1) Feed algorithm

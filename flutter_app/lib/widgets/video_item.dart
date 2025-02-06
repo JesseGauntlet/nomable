@@ -57,7 +57,9 @@ class _VideoItemState extends State<VideoItem> {
     if (_isValidVideoUrl(widget.item.mediaUrl)) {
       return FeedVideoPlayer(
         videoUrl: widget.item.mediaUrl,
+        previewUrl: widget.item.previewUrl,
         nextVideoUrl: widget.nextItem?.mediaUrl,
+        nextPreviewUrl: widget.nextItem?.previewUrl,
       );
     }
     // Fallback for invalid URLs

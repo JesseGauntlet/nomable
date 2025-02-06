@@ -4,6 +4,8 @@ class FeedItem {
   final String id;
   final String userId;
   final String mediaUrl;
+  final String? previewUrl;
+  final bool previewGenerated;
   final String mediaType;
   final List<String> foodTags;
   final String description;
@@ -16,6 +18,8 @@ class FeedItem {
     required this.id,
     required this.userId,
     required this.mediaUrl,
+    this.previewUrl,
+    this.previewGenerated = false,
     required this.mediaType,
     required this.foodTags,
     this.description = '',
@@ -31,6 +35,8 @@ class FeedItem {
       id: doc.id,
       userId: data['userId'] as String,
       mediaUrl: data['mediaUrl'] as String,
+      previewUrl: data['previewUrl'] as String?,
+      previewGenerated: data['previewGenerated'] as bool? ?? false,
       mediaType: data['mediaType'] as String,
       foodTags: List<String>.from(data['foodTags'] ?? []),
       description: data['description'] as String? ?? '',
@@ -46,6 +52,8 @@ class FeedItem {
       'id': id,
       'userId': userId,
       'mediaUrl': mediaUrl,
+      'previewUrl': previewUrl,
+      'previewGenerated': previewGenerated,
       'mediaType': mediaType,
       'foodTags': foodTags,
       'description': description,

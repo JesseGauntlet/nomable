@@ -112,19 +112,23 @@ service cloud.firestore {
         request.resource.data.userId == request.auth.uid &&
         hasValidFields(
           ['userId', 'mediaUrl', 'mediaType', 'foodTags', 'createdAt'],
-          ['description', 'location', 'swipeCounts', 'heartCount', 'bookmarkCount']
+          ['description', 'location', 'swipeCounts', 'heartCount', 'bookmarkCount', 'previewUrl', 'previewGenerated']
         );
       allow update: if isAuthenticated() && (
         // Allow owner to update all fields
         (resource.data.userId == request.auth.uid &&
         hasValidFields(
           ['userId', 'mediaUrl', 'mediaType', 'foodTags'],
-          ['description', 'location', 'swipeCounts', 'heartCount', 'bookmarkCount']
+          ['description', 'location', 'swipeCounts', 'heartCount', 'bookmarkCount', 'previewUrl', 'previewGenerated']
         ))
         ||
         // Allow any authenticated user to update only heartCount
         (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['heartCount']) &&
          request.resource.data.heartCount == resource.data.heartCount + 1)
+        ||
+        // Allow Cloud Functions to update preview-related fields
+        (request.auth.token.firebase.sign_in_provider == 'service_account' &&
+         request.resource.data.diff(resource.data).affectedKeys().hasOnly(['previewUrl', 'previewGenerated', 'updatedAt']))
       );
       allow delete: if isAuthenticated() && resource.data.userId == request.auth.uid;
     }
