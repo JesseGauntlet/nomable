@@ -155,35 +155,30 @@ class _FeedScreenState extends State<FeedScreen> {
 
   @override
   Widget build(BuildContext context) {
-    if (_isLoading) return _buildLoadingState();
-    if (_hasError && _feedItems.isEmpty) return _buildErrorState();
-    if (_feedItems.isEmpty) return _buildEmptyState();
+    if (_isLoading && _feedItems.isEmpty) {
+      return _buildLoadingState();
+    }
 
-    return Container(
-      color: Colors.black,
-      child: PageView.builder(
-        controller: _pageController,
-        scrollDirection: Axis.vertical,
-        itemCount: _feedItems.length + (_hasMoreItems ? 1 : 0),
-        onPageChanged: (index) {
-          if (index >= _feedItems.length - 2) {
-            _loadFeed();
-          }
-        },
-        itemBuilder: (context, index) {
-          if (index == _feedItems.length) {
-            return Container(
-              color: Colors.black,
-              child: const Center(
-                child: CircularProgressIndicator(
-                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                ),
-              ),
-            );
-          }
-          return VideoItem(item: _feedItems[index]);
-        },
-      ),
+    return PageView.builder(
+      controller: _pageController,
+      scrollDirection: Axis.vertical,
+      onPageChanged: (index) {
+        // If we're nearing the end of our loaded items, fetch more
+        if (index >= _feedItems.length - 2) {
+          _loadFeed();
+        }
+      },
+      itemCount: _feedItems.length,
+      itemBuilder: (context, index) {
+        final currentItem = _feedItems[index];
+        final nextItem =
+            index < _feedItems.length - 1 ? _feedItems[index + 1] : null;
+
+        return VideoItem(
+          item: currentItem,
+          nextItem: nextItem,
+        );
+      },
     );
   }
 }
