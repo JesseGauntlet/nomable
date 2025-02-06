@@ -8,6 +8,7 @@ import 'screens/register_screen.dart';
 import 'screens/profile_screen.dart';
 import 'screens/friends_screen.dart';
 import 'screens/video_source_screen.dart';
+import 'screens/explore_screen.dart';
 import 'services/auth_service.dart';
 
 void main() async {
@@ -86,6 +87,7 @@ class _MainScreenState extends State<MainScreen> {
 
   static const List<Widget> _screens = [
     FeedScreen(),
+    ExploreScreen(),
     ProfileScreen(),
     FriendsScreen(),
   ];
@@ -115,8 +117,8 @@ class _MainScreenState extends State<MainScreen> {
             label: 'Feed',
           ),
           BottomNavigationBarItem(
-            icon: SizedBox.shrink(),
-            label: '',
+            icon: Icon(Icons.explore),
+            label: 'Explore',
           ),
           BottomNavigationBarItem(
             icon: SizedBox.shrink(),
@@ -131,7 +133,9 @@ class _MainScreenState extends State<MainScreen> {
             label: 'Friends',
           ),
         ],
-        currentIndex: _selectedIndex == 1 ? 3 : (_selectedIndex == 2 ? 4 : 0),
+        currentIndex: _selectedIndex == 2
+            ? 3
+            : (_selectedIndex == 3 ? 4 : _selectedIndex),
         selectedItemColor: Theme.of(context).colorScheme.primary,
         unselectedItemColor: Colors.grey,
         showSelectedLabels: true,
@@ -144,11 +148,14 @@ class _MainScreenState extends State<MainScreen> {
               case 0:
                 _selectedIndex = 0;
                 break;
-              case 3:
+              case 1:
                 _selectedIndex = 1;
                 break;
-              case 4:
+              case 3:
                 _selectedIndex = 2;
+                break;
+              case 4:
+                _selectedIndex = 3;
                 break;
               default:
                 break;
