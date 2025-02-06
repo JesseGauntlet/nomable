@@ -70,129 +70,122 @@ class _ProfileScreenState extends State<ProfileScreen> {
     return Stack(
       children: [
         // Main content
-        RefreshIndicator(
-          onRefresh: _loadUserData,
-          child: SingleChildScrollView(
-            child: Column(
-              children: [
-                // Profile Header
-                Padding(
-                  padding: EdgeInsets.fromLTRB(16, topPadding + 16, 16, 16),
-                  child: Column(
+        Column(
+          children: [
+            // Profile Header
+            Padding(
+              padding: EdgeInsets.fromLTRB(16, topPadding + 16, 16, 16),
+              child: Column(
+                children: [
+                  // Profile Picture
+                  CircleAvatar(
+                    radius: 42,
+                    backgroundImage: _user?.photoUrl != null
+                        ? NetworkImage(_user!.photoUrl!)
+                        : null,
+                    child: _user?.photoUrl == null
+                        ? Text(
+                            _user!.name[0].toUpperCase(),
+                            style: const TextStyle(fontSize: 27),
+                          )
+                        : null,
+                  ),
+                  const SizedBox(height: 12),
+                  // Name and Edit Button
+                  Stack(
+                    alignment: Alignment.center,
                     children: [
-                      // Profile Picture
-                      CircleAvatar(
-                        radius: 42,
-                        backgroundImage: _user?.photoUrl != null
-                            ? NetworkImage(_user!.photoUrl!)
-                            : null,
-                        child: _user?.photoUrl == null
-                            ? Text(
-                                _user!.name[0].toUpperCase(),
-                                style: const TextStyle(fontSize: 27),
-                              )
-                            : null,
-                      ),
-                      const SizedBox(height: 12),
-                      // Name and Edit Button
-                      Stack(
-                        alignment: Alignment.center,
-                        children: [
-                          // Centered username
-                          Center(
-                            child: Text(
-                              _user!.name,
-                              style: Theme.of(context)
-                                  .textTheme
-                                  .titleLarge
-                                  ?.copyWith(
+                      // Centered username
+                      Center(
+                        child: Text(
+                          _user!.name,
+                          style:
+                              Theme.of(context).textTheme.titleLarge?.copyWith(
                                     fontSize: 20,
                                   ),
-                            ),
-                          ),
-                          // Edit button positioned to the right
-                          Positioned(
-                            right: 0,
-                            child: TextButton.icon(
-                              onPressed: _editProfile,
-                              icon: const Icon(Icons.edit, size: 14),
-                              label: const Text('Edit'),
-                              style: TextButton.styleFrom(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 10,
-                                  vertical: 5,
-                                ),
-                                textStyle: const TextStyle(fontSize: 11),
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                      if (_user?.bio != null) ...[
-                        const SizedBox(height: 6),
-                        Text(
-                          _user!.bio!,
-                          textAlign: TextAlign.center,
-                          style:
-                              Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                    fontSize: 13,
-                                  ),
                         ),
-                      ],
-                      const SizedBox(height: 12),
-                      // Stats
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                        children: [
-                          _buildStat('Following', _user!.followingCount),
-                          _buildStat('Followers', _user!.followersCount),
-                          _buildStat('Likes', _user!.heartCount),
-                        ],
                       ),
-                      const SizedBox(height: 12),
-
-                      // New TabView section for "Cravings, Trends, Videos"
-                      DefaultTabController(
-                        length: 3,
-                        child: Column(
-                          children: [
-                            TabBar(
-                              indicatorColor: Theme.of(context).primaryColor,
-                              labelColor: Theme.of(context).primaryColor,
-                              unselectedLabelColor: Colors.grey,
-                              labelStyle: const TextStyle(fontSize: 12),
-                              tabs: const [
-                                Tab(
-                                    icon: Icon(Icons.fastfood, size: 20),
-                                    text: 'Cravings'),
-                                Tab(
-                                    icon: Icon(Icons.bar_chart, size: 20),
-                                    text: 'Trends'),
-                                Tab(
-                                    icon: Icon(Icons.grid_view, size: 20),
-                                    text: 'Videos'),
-                              ],
+                      // Edit button positioned to the right
+                      Positioned(
+                        right: 0,
+                        child: TextButton.icon(
+                          onPressed: _editProfile,
+                          icon: const Icon(Icons.edit, size: 14),
+                          label: const Text('Edit'),
+                          style: TextButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 10,
+                              vertical: 5,
                             ),
-                            const SizedBox(height: 6),
-                            SizedBox(
-                              height: 255,
-                              child: TabBarView(
-                                children: [
-                                  const ProfileCravingsTab(),
-                                  const ProfileTrendsTab(),
-                                  ProfileVideosTab(videos: _userVideos),
-                                ],
-                              ),
-                            ),
-                          ],
+                            textStyle: const TextStyle(fontSize: 11),
+                          ),
                         ),
                       ),
                     ],
                   ),
-                ),
-              ],
+                  if (_user?.bio != null) ...[
+                    const SizedBox(height: 6),
+                    Text(
+                      _user!.bio!,
+                      textAlign: TextAlign.center,
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                            fontSize: 13,
+                          ),
+                    ),
+                  ],
+                  const SizedBox(height: 12),
+                  // Stats
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                    children: [
+                      _buildStat('Following', _user!.followingCount),
+                      _buildStat('Followers', _user!.followersCount),
+                      _buildStat('Likes', _user!.heartCount),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                ],
+              ),
             ),
-          ),
+
+            // New TabView section for "Cravings, Trends, Videos"
+            Expanded(
+              child: DefaultTabController(
+                length: 3,
+                child: Column(
+                  children: [
+                    TabBar(
+                      indicatorColor: Theme.of(context).primaryColor,
+                      labelColor: Theme.of(context).primaryColor,
+                      unselectedLabelColor: Colors.grey,
+                      labelStyle: const TextStyle(fontSize: 12),
+                      tabs: const [
+                        Tab(
+                            icon: Icon(Icons.fastfood, size: 20),
+                            text: 'Cravings'),
+                        Tab(
+                            icon: Icon(Icons.bar_chart, size: 20),
+                            text: 'Trends'),
+                        Tab(
+                            icon: Icon(Icons.grid_view, size: 20),
+                            text: 'Videos'),
+                      ],
+                    ),
+                    const SizedBox(height: 6),
+                    Expanded(
+                      child: TabBarView(
+                        children: [
+                          const ProfileCravingsTab(),
+                          const ProfileTrendsTab(),
+                          ProfileVideosTab(videos: _userVideos),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
         ),
         // Logout button
         Positioned(
