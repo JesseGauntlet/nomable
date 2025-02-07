@@ -125,6 +125,8 @@ yarn-error.log*
 .env*
 credentials.json
 service-account.json
+**/android/app/src/main/res/values/secrets.xml
+**/ios/Configuration.swift
 
 # Cursor related
 .cursorrules

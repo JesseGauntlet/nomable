@@ -88,6 +88,7 @@ class _MainScreenState extends State<MainScreen> {
   static const List<Widget> _screens = [
     FeedScreen(),
     ExploreScreen(),
+    VideoSourceScreen(),
     ProfileScreen(),
     FriendsScreen(),
   ];
@@ -96,20 +97,6 @@ class _MainScreenState extends State<MainScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       body: _screens[_selectedIndex],
-      floatingActionButton: Transform.translate(
-        offset: const Offset(0, 15),
-        child: FloatingActionButton(
-          onPressed: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                  builder: (context) => const VideoSourceScreen()),
-            );
-          },
-          child: const Icon(Icons.add),
-        ),
-      ),
-      floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
       bottomNavigationBar: BottomNavigationBar(
         items: const <BottomNavigationBarItem>[
           BottomNavigationBarItem(
@@ -121,8 +108,8 @@ class _MainScreenState extends State<MainScreen> {
             label: 'Explore',
           ),
           BottomNavigationBarItem(
-            icon: SizedBox.shrink(),
-            label: '',
+            icon: Icon(Icons.add_circle_outline, size: 32),
+            label: 'Upload',
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.person),
@@ -133,33 +120,15 @@ class _MainScreenState extends State<MainScreen> {
             label: 'Friends',
           ),
         ],
-        currentIndex: _selectedIndex == 2
-            ? 3
-            : (_selectedIndex == 3 ? 4 : _selectedIndex),
+        currentIndex: _selectedIndex,
         selectedItemColor: Theme.of(context).colorScheme.primary,
         unselectedItemColor: Colors.grey,
         showSelectedLabels: true,
         showUnselectedLabels: true,
-        enableFeedback: true,
         type: BottomNavigationBarType.fixed,
         onTap: (index) {
           setState(() {
-            switch (index) {
-              case 0:
-                _selectedIndex = 0;
-                break;
-              case 1:
-                _selectedIndex = 1;
-                break;
-              case 3:
-                _selectedIndex = 2;
-                break;
-              case 4:
-                _selectedIndex = 3;
-                break;
-              default:
-                break;
-            }
+            _selectedIndex = index;
           });
         },
       ),

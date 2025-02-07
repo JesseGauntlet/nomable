@@ -126,8 +126,11 @@ service cloud.firestore {
         (isServiceAccount() && 
           request.resource.data.diff(resource.data).affectedKeys()
             .hasOnly(['previewUrl', 'thumbnailUrl', 'hlsUrl', 'previewGenerated', 'updatedAt'])) ||
-        // Allow normal user operations (existing rules)
-        (isAuthenticated() && resource.data.userId == request.auth.uid);
+        // Allow the owner of the post to perform arbitrary updates
+        (isAuthenticated() && resource.data.userId == request.auth.uid) ||
+        // Allow any authenticated user to like a post by incrementing heartCount by exactly 1
+        (isAuthenticated() && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['heartCount']) &&
+          request.resource.data.heartCount == resource.data.heartCount + 1);
       allow delete: if isAuthenticated() && resource.data.userId == request.auth.uid;
     }
 
