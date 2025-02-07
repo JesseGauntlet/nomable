@@ -48,9 +48,8 @@ service cloud.firestore {
         ) ||
         // Case 3: Owner updating their food preferences
         (isOwner(userId) &&
-          request.resource.data.diff(resource.data).affectedKeys().hasOnly(['foodPreferences', 'currentCraving']) &&
-          request.resource.data.foodPreferences is map &&
-          request.resource.data.currentCraving is string
+          request.resource.data.diff(resource.data).affectedKeys().hasOnly(['foodPreferences', 'updatedAt']) &&
+          request.resource.data.foodPreferences is map
         ) ||
         // Case 4: Anyone can increment heartCount (for likes)
         (

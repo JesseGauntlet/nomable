@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import '../widgets/adaptive_video_player.dart';
+import '../models/feed_item.dart';
+import '../widgets/video_item.dart';
 
 class VideoPreviewScreen extends StatelessWidget {
   final String videoUrl;
@@ -8,6 +9,8 @@ class VideoPreviewScreen extends StatelessWidget {
   final String description;
   final List<String> foodTags;
   final int heartCount;
+  final String userId;
+  final String postId;
 
   const VideoPreviewScreen({
     super.key,
@@ -17,101 +20,46 @@ class VideoPreviewScreen extends StatelessWidget {
     required this.description,
     required this.foodTags,
     required this.heartCount,
+    required this.userId,
+    required this.postId,
   });
 
   @override
   Widget build(BuildContext context) {
+    final feedItem = FeedItem(
+      id: postId,
+      userId: userId,
+      mediaUrl: videoUrl,
+      previewUrl: previewUrl,
+      hlsUrl: hlsUrl,
+      mediaType: 'video',
+      foodTags: foodTags,
+      description: description,
+      heartCount: heartCount,
+      previewGenerated: previewUrl != null,
+    );
+
     return Scaffold(
       backgroundColor: Colors.black,
-      appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.white),
-          onPressed: () => Navigator.pop(context),
-        ),
-      ),
-      body: Column(
+      body: Stack(
         children: [
-          // Video player taking most of the screen
-          Expanded(
-            flex: 3,
-            child: Center(
-              child: AdaptiveVideoPlayer(
-                videoUrl: videoUrl,
-                previewUrl: previewUrl,
-                hlsUrl: hlsUrl,
-                showControls: true,
-              ),
-            ),
+          // Video player
+          VideoItem(
+            item: feedItem,
+            nextItem: null,
           ),
-          // Video details at the bottom
-          Expanded(
-            flex: 1,
-            child: Container(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Description
-                  if (description.isNotEmpty) ...[
-                    Text(
-                      description,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 16,
-                      ),
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    const SizedBox(height: 8),
-                  ],
-                  // Food tags
-                  if (foodTags.isNotEmpty) ...[
-                    Wrap(
-                      spacing: 8,
-                      runSpacing: 4,
-                      children: foodTags
-                          .map((tag) => Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 12,
-                                  vertical: 6,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: Colors.white.withOpacity(0.2),
-                                  borderRadius: BorderRadius.circular(16),
-                                ),
-                                child: Text(
-                                  '#$tag',
-                                  style: const TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 14,
-                                  ),
-                                ),
-                              ))
-                          .toList(),
-                    ),
-                    const SizedBox(height: 8),
-                  ],
-                  // Heart count
-                  Row(
-                    children: [
-                      const Icon(
-                        Icons.favorite,
-                        color: Colors.red,
-                        size: 20,
-                      ),
-                      const SizedBox(width: 4),
-                      Text(
-                        heartCount.toString(),
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 14,
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
+
+          // Back button overlay
+          SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.all(8.0),
+              child: IconButton(
+                icon: const Icon(
+                  Icons.arrow_back,
+                  color: Colors.white,
+                  size: 28,
+                ),
+                onPressed: () => Navigator.pop(context),
               ),
             ),
           ),
