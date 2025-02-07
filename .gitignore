@@ -128,3 +128,8 @@ service-account.json
 
 # Cursor related
 .cursorrules
+
+# Generated app icons
+**/android/app/src/main/res/mipmap-*/
+**/ios/Runner/Assets.xcassets/AppIcon.appiconset/
+!**/ios/Runner/Assets.xcassets/AppIcon.appiconset/Contents.json
