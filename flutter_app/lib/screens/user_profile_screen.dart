@@ -197,7 +197,10 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
                       children: [
                         const ProfileCravingsTab(),
                         const ProfileTrendsTab(),
-                        ProfileVideosTab(videos: _userVideos),
+                        ProfileVideosTab(
+                          videos: _userVideos,
+                          isOwner: false,
+                        ),
                       ],
                     ),
                   ),

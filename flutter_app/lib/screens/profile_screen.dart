@@ -304,6 +304,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                           ProfileVideosTab(
                             videos: _userVideos,
                             onVideosDeleted: _updateVideos,
+                            isOwner: true,
                           ),
                         ],
                       ),
