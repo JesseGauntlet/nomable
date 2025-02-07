@@ -19,6 +19,7 @@ class _UploadScreenState extends State<UploadScreen> {
   final _tagController = TextEditingController();
   String? _selectedVideoPath;
   bool _isUploading = false;
+  bool _uploadSuccess = false;
   final FirebaseStorage _storage = FirebaseStorage.instance;
   final _userService = UserService();
   final List<String> _foodTags = [];
@@ -39,6 +40,7 @@ class _UploadScreenState extends State<UploadScreen> {
     if (video != null) {
       setState(() {
         _selectedVideoPath = video.path;
+        _uploadSuccess = false;
       });
     } else {
       // If no video was selected/captured, go back
@@ -48,31 +50,14 @@ class _UploadScreenState extends State<UploadScreen> {
     }
   }
 
-  Future<String?> _uploadToFirebase(File videoFile) async {
-    try {
-      final userId = FirebaseAuth.instance.currentUser?.uid;
-      if (userId == null) throw Exception('User not authenticated');
-
-      // Upload to Firebase Storage
-      final storageRef = _storage
-          .ref()
-          .child('videos/$userId/${DateTime.now().millisecondsSinceEpoch}.mp4');
-
-      // Set proper metadata for video upload
-      final metadata = SettableMetadata(
-        contentType: 'video/mp4',
-        customMetadata: {'userId': userId},
-      );
-
-      // Upload with metadata
-      await storageRef.putFile(videoFile, metadata);
-
-      // Get download URL
-      return await storageRef.getDownloadURL();
-    } catch (e) {
-      print('Firebase upload error details: $e'); // Add detailed logging
-      throw Exception('Firebase upload failed: $e');
-    }
+  void _resetState() {
+    setState(() {
+      _selectedVideoPath = null;
+      _descriptionController.clear();
+      _tagController.clear();
+      _foodTags.clear();
+      _uploadSuccess = false;
+    });
   }
 
   Future<void> _uploadVideo() async {
@@ -134,21 +119,33 @@ class _UploadScreenState extends State<UploadScreen> {
       });
 
       if (mounted) {
+        setState(() {
+          _isUploading = false;
+          _uploadSuccess = true;
+        });
+
+        // Show success message
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Upload successful!')),
+          const SnackBar(
+            content: Text('Upload successful! Processing video...'),
+            duration: Duration(seconds: 3),
+          ),
         );
-        Navigator.pop(context);
+
+        // Wait a moment to show the success state, then close
+        Future.delayed(const Duration(seconds: 2), () {
+          if (mounted) {
+            Navigator.pop(context);
+          }
+        });
       }
     } catch (e) {
       print('Upload error details: $e');
       if (mounted) {
+        setState(() => _isUploading = false);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Upload failed: $e')),
         );
-      }
-    } finally {
-      if (mounted) {
-        setState(() => _isUploading = false);
       }
     }
   }
@@ -181,77 +178,100 @@ class _UploadScreenState extends State<UploadScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            ElevatedButton.icon(
-              onPressed: _isUploading ? null : _pickVideo,
-              icon: const Icon(Icons.video_library),
-              label: const Text('Select Video'),
-            ),
-            if (_selectedVideoPath != null) ...[
-              const SizedBox(height: 16),
-              Text(
-                'Selected video: ${_selectedVideoPath!.split('/').last}',
-                style: Theme.of(context).textTheme.bodyMedium,
-              ),
-            ],
-            const SizedBox(height: 16),
-            TextField(
-              controller: _descriptionController,
-              decoration: const InputDecoration(
-                labelText: 'Description',
-                border: OutlineInputBorder(),
-              ),
-              maxLines: 3,
-            ),
-            const SizedBox(height: 16),
-            Row(
-              children: [
-                Expanded(
-                  child: TextField(
-                    controller: _tagController,
-                    decoration: const InputDecoration(
-                      labelText: 'Add Food Tags',
-                      hintText: 'Enter a food tag',
-                      border: OutlineInputBorder(),
+            if (_uploadSuccess) ...[
+              const Center(
+                child: Column(
+                  children: [
+                    Icon(
+                      Icons.check_circle,
+                      color: Colors.green,
+                      size: 64,
                     ),
-                    onSubmitted: (_) => _addTag(),
-                  ),
+                    SizedBox(height: 8),
+                    Text(
+                      'Upload Successful!',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    Text('Processing video...'),
+                  ],
                 ),
-                const SizedBox(width: 8),
-                IconButton(
-                  onPressed: _addTag,
-                  icon: const Icon(Icons.add),
-                  tooltip: 'Add Tag',
+              ),
+            ] else ...[
+              ElevatedButton.icon(
+                onPressed: _isUploading ? null : _pickVideo,
+                icon: const Icon(Icons.video_library),
+                label: const Text('Select Video'),
+              ),
+              if (_selectedVideoPath != null) ...[
+                const SizedBox(height: 16),
+                Text(
+                  'Selected video: ${_selectedVideoPath!.split('/').last}',
+                  style: Theme.of(context).textTheme.bodyMedium,
                 ),
               ],
-            ),
-            const SizedBox(height: 8),
-            if (_foodTags.isNotEmpty)
-              Wrap(
-                spacing: 8,
-                runSpacing: 4,
-                children: _foodTags
-                    .map((tag) => Chip(
-                          label: Text(tag),
-                          deleteIcon: const Icon(Icons.close, size: 18),
-                          onDeleted: () {
-                            setState(() {
-                              _foodTags.remove(tag);
-                            });
-                          },
-                        ))
-                    .toList(),
+              const SizedBox(height: 16),
+              TextField(
+                controller: _descriptionController,
+                decoration: const InputDecoration(
+                  labelText: 'Description',
+                  border: OutlineInputBorder(),
+                ),
+                maxLines: 3,
               ),
-            const SizedBox(height: 24),
-            ElevatedButton(
-              onPressed: _isUploading ? null : _uploadVideo,
-              child: _isUploading
-                  ? const SizedBox(
-                      height: 20,
-                      width: 20,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    )
-                  : const Text('Upload Video'),
-            ),
+              const SizedBox(height: 16),
+              Row(
+                children: [
+                  Expanded(
+                    child: TextField(
+                      controller: _tagController,
+                      decoration: const InputDecoration(
+                        labelText: 'Add Food Tags',
+                        hintText: 'Enter a food tag',
+                        border: OutlineInputBorder(),
+                      ),
+                      onSubmitted: (_) => _addTag(),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  IconButton(
+                    onPressed: _addTag,
+                    icon: const Icon(Icons.add),
+                    tooltip: 'Add Tag',
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              if (_foodTags.isNotEmpty)
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 4,
+                  children: _foodTags
+                      .map((tag) => Chip(
+                            label: Text(tag),
+                            deleteIcon: const Icon(Icons.close, size: 18),
+                            onDeleted: () {
+                              setState(() {
+                                _foodTags.remove(tag);
+                              });
+                            },
+                          ))
+                      .toList(),
+                ),
+              const SizedBox(height: 24),
+              ElevatedButton(
+                onPressed: _isUploading ? null : _uploadVideo,
+                child: _isUploading
+                    ? const SizedBox(
+                        height: 20,
+                        width: 20,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Text('Upload Video'),
+              ),
+            ],
           ],
         ),
       ),

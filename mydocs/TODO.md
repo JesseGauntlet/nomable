@@ -17,6 +17,10 @@ Features
 2) Daily resets of cravings / manual test reset button
 3) fix the like/heart button in the feed to implement tracking in users subcollection
 
+Security
+1) Appcheck
+W/StorageUtil(28224): Error getting App Check token; using placeholder token instead. Error: com.google.firebase.FirebaseException: No AppCheckProvider installed.
+
 Thursday 2/6
 1) Video optimizations: Client-side prefetching (done)
 2) Video optimizations: HLS streaming (done) -> seems decently fast, maybe don't strictly need compression rn. Could increase cache size.
