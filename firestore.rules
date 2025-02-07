@@ -60,14 +60,17 @@ service cloud.firestore {
         // Case 5: Allow owner to increment heartCount and update foodPreferences/currentCraving together
         (
           isOwner(userId) &&
-          // Only these fields can change
           request.resource.data.diff(resource.data).affectedKeys()
             .hasOnly(['heartCount', 'foodPreferences', 'currentCraving']) &&
-          // Must be exactly +1
           request.resource.data.heartCount == resource.data.heartCount + 1 &&
-          // Ensure types are correct
           request.resource.data.foodPreferences is map &&
           request.resource.data.currentCraving is string
+        ) ||
+        // Case 6: Allow owner to update their photoUrl
+        (
+          isOwner(userId) &&
+          request.resource.data.diff(resource.data).affectedKeys().hasOnly(['photoUrl', 'updatedAt']) &&
+          request.resource.data.photoUrl is string
         )
       );
       allow delete: if false; // Prevent user deletion through client

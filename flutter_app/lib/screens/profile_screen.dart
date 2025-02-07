@@ -5,6 +5,9 @@ import '../services/auth_service.dart';
 import '../widgets/profile/profile_cravings_tab.dart';
 import '../widgets/profile/profile_trends_tab.dart';
 import '../widgets/profile/profile_videos_tab.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:firebase_storage/firebase_storage.dart';
+import 'dart:io';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -52,7 +55,85 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   Future<void> _editProfile() async {
-    // TODO: Implement edit profile functionality
+    try {
+      // Show a modal bottom sheet with options
+      final action = await showModalBottomSheet<String>(
+        context: context,
+        builder: (BuildContext context) {
+          return SafeArea(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: <Widget>[
+                ListTile(
+                  leading: const Icon(Icons.photo_camera),
+                  title: const Text('Take a photo'),
+                  onTap: () => Navigator.pop(context, 'camera'),
+                ),
+                ListTile(
+                  leading: const Icon(Icons.photo_library),
+                  title: const Text('Choose from gallery'),
+                  onTap: () => Navigator.pop(context, 'gallery'),
+                ),
+              ],
+            ),
+          );
+        },
+      );
+
+      if (action == null) return;
+
+      // Get image from camera or gallery
+      final ImagePicker picker = ImagePicker();
+      final XFile? image = await picker.pickImage(
+        source: action == 'camera' ? ImageSource.camera : ImageSource.gallery,
+        maxWidth: 1024, // Reasonable max width for profile photos
+        maxHeight: 1024,
+        imageQuality: 85, // Good quality while keeping file size reasonable
+      );
+
+      if (image == null) return;
+
+      // Show loading indicator
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Uploading image...')),
+      );
+
+      // Upload to Firebase Storage
+      final storageRef = FirebaseStorage.instance
+          .ref()
+          .child('profile_images')
+          .child(_user!.id)
+          .child('profile.jpg');
+
+      await storageRef.putFile(
+        File(image.path),
+        SettableMetadata(contentType: 'image/jpeg'),
+      );
+
+      // Get download URL
+      final downloadUrl = await storageRef.getDownloadURL();
+
+      // Update user's photoUrl in Firestore
+      await _userService.updateUser(_user!.id, {'photoUrl': downloadUrl});
+
+      // Update local state
+      if (mounted) {
+        setState(() {
+          _user = _user!.copyWith(photoUrl: downloadUrl);
+        });
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Profile photo updated successfully')),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error updating profile photo: $e')),
+        );
+      }
+    }
   }
 
   @override

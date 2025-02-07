@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../models/feed_item.dart';
 import '../services/user_cache_service.dart';
 import '../services/user_service.dart';
+import '../screens/user_profile_screen.dart';
 import 'video_action_buttons.dart';
 import 'video_description.dart';
 import 'feed_video_player.dart';
@@ -125,28 +126,31 @@ class _VideoItemState extends State<VideoItem> {
           // Profile picture above action buttons
           Positioned(
             right: 8,
-            bottom: bottomPadding +
-                275, // Increased from 160 to 220 to position above heart button
+            bottom: bottomPadding + 275,
             child: Column(
               children: [
-                Container(
-                  width: 45,
-                  height: 45,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    border: Border.all(
-                      color: Colors.white,
-                      width: 2,
+                GestureDetector(
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => UserProfileScreen(
+                          userId: widget.item.userId,
+                          initialUsername: _username,
+                        ),
+                      ),
+                    );
+                  },
+                  child: Container(
+                    width: 45,
+                    height: 45,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      border: Border.all(
+                        color: Colors.white,
+                        width: 2,
+                      ),
                     ),
-                  ),
-                  child: GestureDetector(
-                    onTap: () {
-                      // TODO: Navigate to user profile
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                            content: Text('View profile coming soon!')),
-                      );
-                    },
                     child: CircleAvatar(
                       backgroundColor: Colors.grey[800],
                       backgroundImage: _userPhotoUrl != null

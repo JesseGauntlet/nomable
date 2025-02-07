@@ -289,4 +289,29 @@ class UserService {
       throw Exception('Failed to heart post: $e');
     }
   }
+
+  // Update specific user fields
+  Future<void> updateUser(String userId, Map<String, dynamic> data) async {
+    try {
+      await _firestore.collection('users').doc(userId).update({
+        ...data,
+        'updatedAt': FieldValue.serverTimestamp(),
+      });
+    } catch (e) {
+      throw Exception('Failed to update user: $e');
+    }
+  }
+
+  // Get user by ID
+  Future<UserModel?> getUserById(String userId) async {
+    try {
+      final doc = await _firestore.collection('users').doc(userId).get();
+      if (!doc.exists) return null;
+
+      return UserModel.fromFirestore(doc);
+    } catch (e) {
+      print('Error getting user by ID: $e');
+      return null;
+    }
+  }
 }
