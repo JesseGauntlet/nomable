@@ -129,6 +129,8 @@ class _UploadScreenState extends State<UploadScreen> {
         'bookmarkCount': 0,
         'createdAt': FieldValue.serverTimestamp(),
         'previewGenerated': false, // Initialize preview status
+        'thumbnailUrl':
+            '', // Initialize empty thumbnail URL, will be updated by cloud function
       });
 
       if (mounted) {

@@ -85,9 +85,17 @@ class UserService {
           .orderBy('createdAt', descending: true)
           .get();
 
-      return videosSnapshot.docs
-          .map((doc) => {'id': doc.id, ...doc.data()})
-          .toList();
+      // Include thumbnailUrl in the returned data
+      return videosSnapshot.docs.map((doc) {
+        final data = doc.data();
+        return {
+          'id': doc.id,
+          ...data,
+          // Ensure thumbnailUrl is included if it exists
+          if (!data.containsKey('thumbnailUrl'))
+            'thumbnailUrl': '', // Provide default empty string if not exists
+        };
+      }).toList();
     } catch (e) {
       print('Error getting user videos: $e');
       return [];
