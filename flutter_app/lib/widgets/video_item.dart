@@ -58,8 +58,10 @@ class _VideoItemState extends State<VideoItem> {
       return FeedVideoPlayer(
         videoUrl: widget.item.mediaUrl,
         previewUrl: widget.item.previewUrl,
+        hlsUrl: widget.item.hlsUrl,
         nextVideoUrl: widget.nextItem?.mediaUrl,
         nextPreviewUrl: widget.nextItem?.previewUrl,
+        nextHlsUrl: widget.nextItem?.hlsUrl,
       );
     }
     // Fallback for invalid URLs

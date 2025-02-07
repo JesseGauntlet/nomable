@@ -117,13 +117,13 @@ service cloud.firestore {
         request.resource.data.userId == request.auth.uid &&
         hasValidFields(
           ['userId', 'mediaUrl', 'mediaType', 'foodTags', 'createdAt'],
-          ['description', 'location', 'swipeCounts', 'heartCount', 'bookmarkCount', 'previewUrl', 'previewGenerated', 'thumbnailUrl']
+          ['description', 'location', 'swipeCounts', 'heartCount', 'bookmarkCount', 'previewUrl', 'previewGenerated', 'thumbnailUrl', 'hlsUrl']
         );
       allow update: if 
         // Allow cloud functions to update preview/thumbnail URLs
         (isServiceAccount() && 
           request.resource.data.diff(resource.data).affectedKeys()
-            .hasOnly(['previewUrl', 'thumbnailUrl', 'previewGenerated', 'updatedAt'])) ||
+            .hasOnly(['previewUrl', 'thumbnailUrl', 'hlsUrl', 'previewGenerated', 'updatedAt'])) ||
         // Allow normal user operations (existing rules)
         (isAuthenticated() && resource.data.userId == request.auth.uid);
       allow delete: if isAuthenticated() && resource.data.userId == request.auth.uid;

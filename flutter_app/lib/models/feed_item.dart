@@ -5,6 +5,7 @@ class FeedItem {
   final String userId;
   final String mediaUrl;
   final String? previewUrl;
+  final String? hlsUrl;
   final bool previewGenerated;
   final String mediaType;
   final List<String> foodTags;
@@ -19,6 +20,7 @@ class FeedItem {
     required this.userId,
     required this.mediaUrl,
     this.previewUrl,
+    this.hlsUrl,
     this.previewGenerated = false,
     required this.mediaType,
     required this.foodTags,
@@ -36,6 +38,7 @@ class FeedItem {
       userId: data['userId'] as String,
       mediaUrl: data['mediaUrl'] as String,
       previewUrl: data['previewUrl'] as String?,
+      hlsUrl: data['hlsUrl'] as String?,
       previewGenerated: data['previewGenerated'] as bool? ?? false,
       mediaType: data['mediaType'] as String,
       foodTags: List<String>.from(data['foodTags'] ?? []),
@@ -53,6 +56,7 @@ class FeedItem {
       'userId': userId,
       'mediaUrl': mediaUrl,
       'previewUrl': previewUrl,
+      'hlsUrl': hlsUrl,
       'previewGenerated': previewGenerated,
       'mediaType': mediaType,
       'foodTags': foodTags,

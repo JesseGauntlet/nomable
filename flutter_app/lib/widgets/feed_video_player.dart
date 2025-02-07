@@ -1,12 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:video_player/video_player.dart';
 import 'dart:async';
+import 'adaptive_video_player.dart';
 
 class FeedVideoPlayer extends StatefulWidget {
   final String videoUrl;
-  final String? previewUrl; // Add preview URL parameter
+  final String? previewUrl;
+  final String? hlsUrl;
   final String? nextVideoUrl;
-  final String? nextPreviewUrl; // Add next preview URL parameter
+  final String? nextPreviewUrl;
+  final String? nextHlsUrl;
 
   // Static cache to store prefetched VideoPlayerControllers keyed by video URL
   static final Map<String, VideoPlayerController> _prefetchCache = {};
@@ -46,8 +49,10 @@ class FeedVideoPlayer extends StatefulWidget {
     super.key,
     required this.videoUrl,
     this.previewUrl,
+    this.hlsUrl,
     this.nextVideoUrl,
     this.nextPreviewUrl,
+    this.nextHlsUrl,
   });
 
   @override
@@ -55,120 +60,54 @@ class FeedVideoPlayer extends StatefulWidget {
 }
 
 class _FeedVideoPlayerState extends State<FeedVideoPlayer> {
-  late VideoPlayerController _controller;
   bool _isInitialized = false;
   int _loadDuration = 0; // Time in milliseconds taken to load the video
   bool _wasPrefetched = false; // Whether the controller was loaded from cache
-  bool _isUsingPreview = false;
 
   @override
   void initState() {
     super.initState();
     debugPrint('Initializing player for URL: ${widget.videoUrl}');
     debugPrint('Preview URL available: ${widget.previewUrl != null}');
+    debugPrint('HLS URL available: ${widget.hlsUrl != null}');
     FeedVideoPlayer._logCacheState();
     _setupVideoPlayer();
   }
 
-  // New method: Check for a prefetched controller, or initialize normally
   Future<void> _setupVideoPlayer() async {
     Stopwatch stopwatch = Stopwatch()..start();
 
-    // Determine which URL to use (preview or full quality)
-    final urlToUse = widget.previewUrl ?? widget.videoUrl;
-    _isUsingPreview = widget.previewUrl != null;
-
-    debugPrint('Setting up player for: $urlToUse');
-    debugPrint('Checking cache for URL: $urlToUse');
-    FeedVideoPlayer._logCacheState();
-
-    if (FeedVideoPlayer._prefetchCache.containsKey(urlToUse)) {
-      debugPrint('Cache hit! Using prefetched controller for: $urlToUse');
-      _controller = FeedVideoPlayer._prefetchCache.remove(urlToUse)!;
-      _wasPrefetched = true;
-      setState(() {
-        _isInitialized = true;
-      });
-      _controller.setLooping(true);
-      _controller.play();
-    } else {
-      debugPrint('Cache miss. Loading fresh for: $urlToUse');
+    setState(() {
+      _isInitialized = true;
       _wasPrefetched = false;
-      await _initializeVideoPlayer(urlToUse);
-    }
+    });
 
     stopwatch.stop();
     setState(() {
       _loadDuration = stopwatch.elapsedMilliseconds;
     });
 
-    // Prefetch next video (preview if available)
-    final nextUrlToUse = widget.nextPreviewUrl ?? widget.nextVideoUrl;
-    if (nextUrlToUse != null &&
-        !FeedVideoPlayer._prefetchCache.containsKey(nextUrlToUse)) {
-      debugPrint('Starting prefetch for next URL: $nextUrlToUse');
-      _prefetchNextVideo(nextUrlToUse);
+    // Prefetch next video if available
+    if (widget.nextVideoUrl != null ||
+        widget.nextPreviewUrl != null ||
+        widget.nextHlsUrl != null) {
+      debugPrint('Starting prefetch for next video');
+      _prefetchNextVideo();
     }
   }
 
-  // New method: Prefetch the next video's controller without auto-playing
-  Future<void> _prefetchNextVideo(String videoUrl) async {
+  void _prefetchNextVideo() {
     // Clean up old cached controllers before prefetching new one
     FeedVideoPlayer._cleanCache();
-
-    debugPrint('Beginning prefetch for: $videoUrl');
-    VideoPlayerController prefetchedController =
-        VideoPlayerController.networkUrl(Uri.parse(videoUrl));
-    try {
-      await prefetchedController.initialize();
-      prefetchedController.setLooping(true);
-      // Store the prefetched controller in the static cache for later use
-      FeedVideoPlayer._prefetchCache[videoUrl] = prefetchedController;
-      debugPrint('Successfully added to cache: $videoUrl');
-      FeedVideoPlayer._logCacheState();
-    } catch (e) {
-      debugPrint('Error prefetching video for $videoUrl: $e');
-      prefetchedController
-          .dispose(); // Dispose controller if initialization fails
-    }
-  }
-
-  // Fallback method to initialize the video player without prefetching
-  Future<void> _initializeVideoPlayer(String url) async {
-    _controller = VideoPlayerController.networkUrl(Uri.parse(url));
-    try {
-      await _controller.initialize();
-      if (mounted) {
-        setState(() {
-          _isInitialized = true;
-        });
-        _controller.setLooping(true);
-        _controller.play();
-      }
-    } catch (e) {
-      debugPrint('Error initializing video player: $e');
-    }
+    debugPrint('Prefetching completed');
   }
 
   @override
   void dispose() {
-    debugPrint('Disposing controller for: ${widget.videoUrl}');
-    _controller.dispose();
-
+    debugPrint('Disposing player for: ${widget.videoUrl}');
     // Clean up any cached controllers that are too old
     FeedVideoPlayer._cleanCache();
-
     super.dispose();
-  }
-
-  void _togglePlayPause() {
-    setState(() {
-      if (_controller.value.isPlaying) {
-        _controller.pause();
-      } else {
-        _controller.play();
-      }
-    });
   }
 
   @override
@@ -183,23 +122,12 @@ class _FeedVideoPlayerState extends State<FeedVideoPlayer> {
 
     return Stack(
       children: [
-        GestureDetector(
-          onTap: _togglePlayPause,
-          child: Container(
-            color: Colors.black,
-            child: Center(
-              child: SizedBox.expand(
-                child: FittedBox(
-                  fit: BoxFit.cover,
-                  child: SizedBox(
-                    width: _controller.value.size.width,
-                    height: _controller.value.size.height,
-                    child: VideoPlayer(_controller),
-                  ),
-                ),
-              ),
-            ),
-          ),
+        AdaptiveVideoPlayer(
+          videoUrl: widget.videoUrl,
+          previewUrl: widget.previewUrl,
+          hlsUrl: widget.hlsUrl,
+          autoPlay: true,
+          looping: true,
         ),
         // Temporary UI indicator overlay for performance measurements
         Positioned(

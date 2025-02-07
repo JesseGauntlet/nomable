@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
-import '../widgets/feed_video_player.dart';
+import '../widgets/adaptive_video_player.dart';
 
 class VideoPreviewScreen extends StatelessWidget {
   final String videoUrl;
+  final String? previewUrl;
+  final String? hlsUrl;
   final String description;
   final List<String> foodTags;
   final int heartCount;
@@ -10,6 +12,8 @@ class VideoPreviewScreen extends StatelessWidget {
   const VideoPreviewScreen({
     super.key,
     required this.videoUrl,
+    this.previewUrl,
+    this.hlsUrl,
     required this.description,
     required this.foodTags,
     required this.heartCount,
@@ -33,7 +37,12 @@ class VideoPreviewScreen extends StatelessWidget {
           Expanded(
             flex: 3,
             child: Center(
-              child: FeedVideoPlayer(videoUrl: videoUrl),
+              child: AdaptiveVideoPlayer(
+                videoUrl: videoUrl,
+                previewUrl: previewUrl,
+                hlsUrl: hlsUrl,
+                showControls: true,
+              ),
             ),
           ),
           // Video details at the bottom
