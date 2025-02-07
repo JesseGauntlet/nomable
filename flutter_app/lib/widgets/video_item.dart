@@ -8,10 +8,12 @@ import 'feed_video_player.dart';
 
 class VideoItem extends StatefulWidget {
   final FeedItem item;
+  final FeedItem? nextItem;
 
   const VideoItem({
     super.key,
     required this.item,
+    this.nextItem,
   });
 
   @override
@@ -53,7 +55,14 @@ class _VideoItemState extends State<VideoItem> {
 
   Widget _buildVideoContent() {
     if (_isValidVideoUrl(widget.item.mediaUrl)) {
-      return FeedVideoPlayer(videoUrl: widget.item.mediaUrl);
+      return FeedVideoPlayer(
+        videoUrl: widget.item.mediaUrl,
+        previewUrl: widget.item.previewUrl,
+        hlsUrl: widget.item.hlsUrl,
+        nextVideoUrl: widget.nextItem?.mediaUrl,
+        nextPreviewUrl: widget.nextItem?.previewUrl,
+        nextHlsUrl: widget.nextItem?.hlsUrl,
+      );
     }
     // Fallback for invalid URLs
     return const Center(child: Text('Invalid video URL'));

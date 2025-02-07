@@ -97,16 +97,41 @@ class _UploadScreenState extends State<UploadScreen> {
     try {
       final videoFile = File(_selectedVideoPath!);
 
-      // 1. Upload to Firebase Storage
-      final videoUrl = await _uploadToFirebase(videoFile);
+      // 1. Create a Firestore document first to get the ID
+      final postRef = FirebaseFirestore.instance.collection('posts').doc();
 
-      // 2. Save metadata to Firestore with food tags
-      await _userService.addUserVideo(
-        user.uid,
-        videoUrl!,
-        description: _descriptionController.text,
-        foodTags: _foodTags,
+      // 2. Upload to Firebase Storage with postId in metadata
+      final storageRef = _storage.ref().child(
+          'videos/${user.uid}/${DateTime.now().millisecondsSinceEpoch}.mp4');
+
+      // Set proper metadata for video upload
+      final metadata = SettableMetadata(
+        contentType: 'video/mp4',
+        customMetadata: {
+          'userId': user.uid,
+          'postId': postRef.id, // Include the post ID in metadata
+        },
       );
+
+      // Upload with metadata
+      await storageRef.putFile(videoFile, metadata);
+      final videoUrl = await storageRef.getDownloadURL();
+
+      // 3. Save metadata to Firestore with food tags
+      await postRef.set({
+        'userId': user.uid,
+        'mediaUrl': videoUrl,
+        'mediaType': 'video',
+        'foodTags': _foodTags,
+        'description': _descriptionController.text,
+        'swipeCounts': 0,
+        'heartCount': 0,
+        'bookmarkCount': 0,
+        'createdAt': FieldValue.serverTimestamp(),
+        'previewGenerated': false, // Initialize preview status
+        'thumbnailUrl':
+            '', // Initialize empty thumbnail URL, will be updated by cloud function
+      });
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -115,7 +140,7 @@ class _UploadScreenState extends State<UploadScreen> {
         Navigator.pop(context);
       }
     } catch (e) {
-      print('Upload error details: $e'); // Add detailed logging
+      print('Upload error details: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Upload failed: $e')),
