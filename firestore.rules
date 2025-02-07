@@ -70,6 +70,12 @@ service cloud.firestore {
           isOwner(userId) &&
           request.resource.data.diff(resource.data).affectedKeys().hasOnly(['photoUrl', 'updatedAt']) &&
           request.resource.data.photoUrl is string
+        ) ||
+        // Case 7: Allow owner to reset their preferences
+        (
+          isOwner(userId) &&
+          request.resource.data.diff(resource.data).affectedKeys().hasOnly(['foodPreferences', 'updatedAt']) &&
+          request.resource.data.foodPreferences.size() == 0
         )
       );
       allow delete: if false; // Prevent user deletion through client
@@ -88,27 +94,28 @@ service cloud.firestore {
 
       // Friend requests subcollection
       match /friend_requests/{requestId} {
-        // Allow users to read their own friend requests
         allow read: if isOwner(userId);
-        // Allow any authenticated user to create a friend request
-        // but only if they're sending it as themselves
         allow create: if isAuthenticated() 
           && request.resource.data.requestorId == request.auth.uid;
-        // Allow users to delete friend requests they received
         allow delete: if isOwner(userId);
       }
 
       // Friends subcollection
       match /friends/{friendId} {
-        // Allow users to read their own friends list
         allow read: if isOwner(userId);
-        // Allow writes in two cases:
-        // 1. User is managing their own friends list
-        // 2. User is being added as a friend by someone who has them in their friend_requests
         allow write: if isOwner(userId) || 
           (isAuthenticated() && 
            exists(/databases/$(database)/documents/users/$(request.auth.uid)/friend_requests/$(userId)) &&
            friendId == request.auth.uid);
+      }
+
+      // Preference history subcollection
+      match /preferenceHistory/{historyId} {
+        allow read: if isOwner(userId);
+        allow create: if isOwner(userId) &&
+          hasValidFields(['date', 'preferences'], []) &&
+          request.resource.data.preferences is map;
+        allow delete: if isOwner(userId);
       }
     }
 

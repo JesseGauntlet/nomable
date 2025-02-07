@@ -336,6 +336,39 @@ class UserService {
     }
   }
 
+  // Archive current preferences and reset them
+  Future<void> archiveAndResetPreferences(
+      String userId, Map<String, int> currentPreferences) async {
+    try {
+      final batch = _firestore.batch();
+
+      // Create a new preference history document
+      final historyRef = _firestore
+          .collection('users')
+          .doc(userId)
+          .collection('preferenceHistory')
+          .doc();
+
+      // Store current preferences with timestamp
+      batch.set(historyRef, {
+        'date': FieldValue.serverTimestamp(),
+        'preferences': currentPreferences,
+      });
+
+      // Reset the user's current preferences
+      final userRef = _firestore.collection('users').doc(userId);
+      batch.update(userRef, {
+        'foodPreferences': {},
+        'updatedAt': FieldValue.serverTimestamp(),
+      });
+
+      // Commit both operations atomically
+      await batch.commit();
+    } catch (e) {
+      throw Exception('Failed to archive and reset preferences: $e');
+    }
+  }
+
   // Get user by ID
   Future<UserModel?> getUserById(String userId) async {
     try {

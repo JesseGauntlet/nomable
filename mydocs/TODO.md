@@ -34,9 +34,10 @@ Thursday 2/6
 
 Friday 2/7
 0) Fix Profile video bugs: (thumbnail stretched, videos should be same as feed ui)
-1) Feature, delete videos
-2) iOs build? Android production build?
-3) Firebase beta distributions
+1) Feature:delete videos
+2) Fix liking other vids, simplify bottom nav UI
+3) iOs build? Android production build?
+4) Firebase beta distributions?
 
 Beyond
 1) Feed algorithm
