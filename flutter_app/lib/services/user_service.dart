@@ -302,6 +302,40 @@ class UserService {
     }
   }
 
+  // Delete a post and update user's video count
+  Future<void> deletePost(String postId) async {
+    try {
+      final currentUser = _auth.currentUser;
+      if (currentUser == null) throw Exception('No authenticated user found');
+
+      // Get the post to verify ownership
+      final postDoc = await _firestore.collection('posts').doc(postId).get();
+      if (!postDoc.exists) throw Exception('Post not found');
+
+      final postData = postDoc.data() as Map<String, dynamic>;
+      if (postData['userId'] != currentUser.uid) {
+        throw Exception('Not authorized to delete this post');
+      }
+
+      // Start a batch write
+      final batch = _firestore.batch();
+
+      // Delete the post
+      batch.delete(_firestore.collection('posts').doc(postId));
+
+      // Decrement user's video count
+      batch.update(_firestore.collection('users').doc(currentUser.uid), {
+        'videosCount': FieldValue.increment(-1),
+        'updatedAt': FieldValue.serverTimestamp(),
+      });
+
+      // Commit the batch
+      await batch.commit();
+    } catch (e) {
+      throw Exception('Failed to delete post: $e');
+    }
+  }
+
   // Get user by ID
   Future<UserModel?> getUserById(String userId) async {
     try {

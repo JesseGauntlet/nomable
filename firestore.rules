@@ -41,10 +41,10 @@ service cloud.firestore {
           request.resource.data.foodPreferences is map &&
           request.resource.data.currentCraving is string
         ) ||
-        // Case 2: Owner incrementing their videosCount
+        // Case 2: Owner incrementing or decrementing their videosCount
         (isOwner(userId) &&
-          request.resource.data.diff(resource.data).affectedKeys().hasOnly(['videosCount']) &&
-          request.resource.data.videosCount == resource.data.videosCount + 1
+          request.resource.data.diff(resource.data).affectedKeys().hasOnly(['videosCount', 'updatedAt']) &&
+          (request.resource.data.videosCount == resource.data.videosCount + 1 || request.resource.data.videosCount == resource.data.videosCount - 1)
         ) ||
         // Case 3: Owner updating their food preferences
         (isOwner(userId) &&
