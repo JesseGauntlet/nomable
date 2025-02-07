@@ -16,20 +16,36 @@ class ProfileScreen extends StatefulWidget {
   State<ProfileScreen> createState() => _ProfileScreenState();
 }
 
-class _ProfileScreenState extends State<ProfileScreen> {
+class _ProfileScreenState extends State<ProfileScreen>
+    with SingleTickerProviderStateMixin {
   final _userService = UserService();
   UserModel? _user;
   List<Map<String, dynamic>> _userVideos = [];
   bool _isLoading = true;
+  late TabController _tabController;
 
   @override
   void initState() {
     super.initState();
+    _tabController = TabController(length: 3, vsync: this);
     _loadUserData();
   }
 
+  @override
+  void dispose() {
+    _tabController.dispose();
+    super.dispose();
+  }
+
   Future<void> _loadUserData() async {
-    setState(() => _isLoading = true);
+    // Check if this is the initial load (when _user is null)
+    bool isInitialLoad = _user == null;
+    if (isInitialLoad) {
+      setState(() {
+        _isLoading = true;
+      });
+    }
+
     try {
       final user = await _userService.getCurrentUser();
       if (user != null) {
@@ -38,18 +54,38 @@ class _ProfileScreenState extends State<ProfileScreen> {
           setState(() {
             _user = user;
             _userVideos = videos;
+            _isLoading = false;
           });
         }
       }
     } catch (e) {
       if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Error loading profile: $e')),
         );
       }
-    } finally {
+    }
+  }
+
+  // Method to update videos list without full reload
+  Future<void> _updateVideos() async {
+    if (_user == null) return;
+
+    try {
+      final videos = await _userService.getUserVideos(_user!.id);
       if (mounted) {
-        setState(() => _isLoading = false);
+        setState(() {
+          _userVideos = videos;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error updating videos: $e')),
+        );
       }
     }
   }
@@ -139,103 +175,109 @@ class _ProfileScreenState extends State<ProfileScreen> {
   @override
   Widget build(BuildContext context) {
     if (_isLoading) {
-      return const Center(child: CircularProgressIndicator());
+      return const Scaffold(
+        body: Center(child: CircularProgressIndicator()),
+      );
     }
 
     if (_user == null) {
-      return const Center(child: Text('Error loading profile'));
+      return const Scaffold(
+        body: Center(child: Text('Error loading profile')),
+      );
     }
 
     final topPadding = MediaQuery.of(context).padding.top;
 
-    return Stack(
-      children: [
-        // Main content
-        Column(
-          children: [
-            // Profile Header
-            Padding(
-              padding: EdgeInsets.fromLTRB(16, topPadding + 16, 16, 16),
-              child: Column(
-                children: [
-                  // Profile Picture
-                  CircleAvatar(
-                    radius: 42,
-                    backgroundImage: _user?.photoUrl != null
-                        ? NetworkImage(_user!.photoUrl!)
-                        : null,
-                    child: _user?.photoUrl == null
-                        ? Text(
-                            _user!.name[0].toUpperCase(),
-                            style: const TextStyle(fontSize: 27),
-                          )
-                        : null,
-                  ),
-                  const SizedBox(height: 12),
-                  // Name and Edit Button
-                  Stack(
-                    alignment: Alignment.center,
-                    children: [
-                      // Centered username
-                      Center(
-                        child: Text(
-                          _user!.name,
-                          style:
-                              Theme.of(context).textTheme.titleLarge?.copyWith(
-                                    fontSize: 20,
-                                  ),
-                        ),
-                      ),
-                      // Edit button positioned to the right
-                      Positioned(
-                        right: 0,
-                        child: TextButton.icon(
-                          onPressed: _editProfile,
-                          icon: const Icon(Icons.edit, size: 14),
-                          label: const Text('Edit'),
-                          style: TextButton.styleFrom(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 10,
-                              vertical: 5,
-                            ),
-                            textStyle: const TextStyle(fontSize: 11),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                  if (_user?.bio != null) ...[
-                    const SizedBox(height: 6),
-                    Text(
-                      _user!.bio!,
-                      textAlign: TextAlign.center,
-                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                            fontSize: 13,
-                          ),
+    return Scaffold(
+      body: Stack(
+        children: [
+          // Main content
+          Column(
+            children: [
+              // Profile Header
+              Padding(
+                padding: EdgeInsets.fromLTRB(16, topPadding + 16, 16, 16),
+                child: Column(
+                  children: [
+                    // Profile Picture
+                    CircleAvatar(
+                      radius: 42,
+                      backgroundImage: _user?.photoUrl != null
+                          ? NetworkImage(_user!.photoUrl!)
+                          : null,
+                      child: _user?.photoUrl == null
+                          ? Text(
+                              _user!.name[0].toUpperCase(),
+                              style: const TextStyle(fontSize: 27),
+                            )
+                          : null,
                     ),
-                  ],
-                  const SizedBox(height: 12),
-                  // Stats
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                    children: [
-                      _buildStat('Following', _user!.followingCount),
-                      _buildStat('Followers', _user!.followersCount),
-                      _buildStat('Likes', _user!.heartCount),
+                    const SizedBox(height: 12),
+                    // Name and Edit Button
+                    Stack(
+                      alignment: Alignment.center,
+                      children: [
+                        // Centered username
+                        Center(
+                          child: Text(
+                            _user!.name,
+                            style: Theme.of(context)
+                                .textTheme
+                                .titleLarge
+                                ?.copyWith(
+                                  fontSize: 20,
+                                ),
+                          ),
+                        ),
+                        // Edit button positioned to the right
+                        Positioned(
+                          right: 0,
+                          child: TextButton.icon(
+                            onPressed: _editProfile,
+                            icon: const Icon(Icons.edit, size: 14),
+                            label: const Text('Edit'),
+                            style: TextButton.styleFrom(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 10,
+                                vertical: 5,
+                              ),
+                              textStyle: const TextStyle(fontSize: 11),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    if (_user?.bio != null) ...[
+                      const SizedBox(height: 6),
+                      Text(
+                        _user!.bio!,
+                        textAlign: TextAlign.center,
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                              fontSize: 13,
+                            ),
+                      ),
                     ],
-                  ),
-                  const SizedBox(height: 12),
-                ],
+                    const SizedBox(height: 12),
+                    // Stats
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                      children: [
+                        _buildStat('Following', _user!.followingCount),
+                        _buildStat('Followers', _user!.followersCount),
+                        _buildStat('Likes', _user!.heartCount),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                  ],
+                ),
               ),
-            ),
 
-            // New TabView section for "Cravings, Trends, Videos"
-            Expanded(
-              child: DefaultTabController(
-                length: 3,
+              // TabView section
+              Expanded(
                 child: Column(
                   children: [
                     TabBar(
+                      controller: _tabController,
                       indicatorColor: Theme.of(context).primaryColor,
                       labelColor: Theme.of(context).primaryColor,
                       unselectedLabelColor: Colors.grey,
@@ -255,35 +297,39 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     const SizedBox(height: 6),
                     Expanded(
                       child: TabBarView(
+                        controller: _tabController,
                         children: [
                           const ProfileCravingsTab(),
                           const ProfileTrendsTab(),
-                          ProfileVideosTab(videos: _userVideos),
+                          ProfileVideosTab(
+                            videos: _userVideos,
+                            onVideosDeleted: _updateVideos,
+                          ),
                         ],
                       ),
                     ),
                   ],
                 ),
               ),
-            ),
-          ],
-        ),
-        // Logout button
-        Positioned(
-          top: topPadding + 8,
-          right: 8,
-          child: IconButton(
-            icon: const Icon(Icons.logout),
-            onPressed: () async {
-              final authService = AuthService();
-              await authService.signOut();
-              if (mounted) {
-                Navigator.of(context).pushReplacementNamed('/login');
-              }
-            },
+            ],
           ),
-        ),
-      ],
+          // Logout button
+          Positioned(
+            top: topPadding + 8,
+            right: 8,
+            child: IconButton(
+              icon: const Icon(Icons.logout),
+              onPressed: () async {
+                final authService = AuthService();
+                await authService.signOut();
+                if (mounted) {
+                  Navigator.of(context).pushReplacementNamed('/login');
+                }
+              },
+            ),
+          ),
+        ],
+      ),
     );
   }
 
