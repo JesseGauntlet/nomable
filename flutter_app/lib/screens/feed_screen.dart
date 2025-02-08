@@ -18,6 +18,7 @@ class _FeedScreenState extends State<FeedScreen> {
   bool _hasError = false;
   bool _hasMoreItems = true;
   final PageController _pageController = PageController();
+  DocumentSnapshot? _lastDocument; // Track the last document for pagination
 
   // Number of items to fetch per page
   static const int _itemsPerPage = 10;
@@ -42,32 +43,47 @@ class _FeedScreenState extends State<FeedScreen> {
   }
 
   Future<void> _loadFeed({bool refresh = false}) async {
-    if (!mounted) return;
+    if (!mounted || _isLoading || (!refresh && !_hasMoreItems)) return;
 
     setState(() {
       if (refresh) {
         _feedItems.clear();
+        _lastDocument = null;
         _hasMoreItems = true;
       }
       _isLoading = true;
     });
 
     try {
-      final query = FirebaseFirestore.instance
+      Query query = FirebaseFirestore.instance
           .collection('posts')
           .orderBy('createdAt', descending: true)
           .limit(_itemsPerPage);
 
+      // If this is not a refresh and we have a last document, start after it
+      if (!refresh && _lastDocument != null) {
+        query = query.startAfterDocument(_lastDocument!);
+      }
+
       final snapshot = await query.get();
+      final docs = snapshot.docs;
 
       if (!mounted) return;
 
-      setState(() {
-        _feedItems
-            .addAll(snapshot.docs.map((doc) => FeedItem.fromFirestore(doc)));
-        _hasMoreItems = snapshot.docs.length >= _itemsPerPage;
-        _isLoading = false;
-      });
+      if (docs.isNotEmpty) {
+        _lastDocument = docs.last;
+        setState(() {
+          _feedItems.addAll(docs.map((doc) => FeedItem.fromFirestore(doc)));
+          _hasMoreItems = docs.length >= _itemsPerPage;
+          _isLoading = false;
+          _hasError = false;
+        });
+      } else {
+        setState(() {
+          _hasMoreItems = false;
+          _isLoading = false;
+        });
+      }
     } catch (e) {
       print('FeedScreen: Error loading feed: $e');
       if (!mounted) return;
