@@ -95,12 +95,12 @@ class _LoginScreenState extends State<LoginScreen> {
       // Send verification email with custom settings
       await user.sendEmailVerification(
         ActionCodeSettings(
-          url: 'https://foodtok-f468d.firebaseapp.com/verify-email',
+          url: 'https://froupr-f468d.firebaseapp.com/verify-email',
           handleCodeInApp: true,
-          androidPackageName: 'com.example.foodtok',
+          androidPackageName: 'com.example.froupr',
           androidInstallApp: true,
           androidMinimumVersion: '12',
-          iOSBundleId: 'com.example.foodtok',
+          iOSBundleId: 'com.example.froupr',
         ),
       );
 
@@ -216,7 +216,7 @@ class _LoginScreenState extends State<LoginScreen> {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 const Text(
-                  'Welcome to FoodTok',
+                  'Welcome to froupr',
                   style: TextStyle(
                     fontSize: 24,
                     fontWeight: FontWeight.bold,

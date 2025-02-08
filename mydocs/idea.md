@@ -68,8 +68,18 @@ User stories (6):
 2) See a list of recipes that match the group's preferences
 3) See a list of ingredients I need to buy to make the recipe
 
+- I want a feed algorithm for X percent new, and X percent things I like
+1) Feed algorithm based on my preferences, and preferences of people I follow
+2) Feed algorithm based on the group's preferences
+3) Something "new" feed, which shows new foods
+
+- I want ratings and reviews for restaurants
+1) See a list of friend ratings for a restaurant
+2) X approve, X disapprove (4+ star vs 3- star?)
+
 Stretch stories:
 
 - I want to be able to add music to my videos
 - I want AI to automatically tag foods in my videos
-- I want the videos to load faster (cache, reduce resolution, chunk videos, etc)
+- I want the videos to load faster (cache, reduce resolution, chunk videos, etc) -> done
+- I want a feed algorithm for X percent new, and X percent things I like
