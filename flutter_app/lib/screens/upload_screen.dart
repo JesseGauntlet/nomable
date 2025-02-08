@@ -23,6 +23,9 @@ class _UploadScreenState extends State<UploadScreen> {
   final FirebaseStorage _storage = FirebaseStorage.instance;
   final _userService = UserService();
   final List<String> _foodTags = [];
+  // Maximum file size in bytes (100MB)
+  static const int _maxFileSize = 100 * 1024 * 1024;
+  String? _selectedVideoError;
 
   @override
   void initState() {
@@ -33,15 +36,56 @@ class _UploadScreenState extends State<UploadScreen> {
     });
   }
 
+  Future<bool> _checkVideoSize(String path) async {
+    try {
+      final file = File(path);
+      final size = await file.length();
+      if (size > _maxFileSize) {
+        if (mounted) {
+          setState(() {
+            _selectedVideoError =
+                'Video size (${(size / 1024 / 1024).toStringAsFixed(1)}MB) exceeds maximum allowed size (${(_maxFileSize / 1024 / 1024).toStringAsFixed(0)}MB)';
+          });
+        }
+        return false;
+      }
+      setState(() {
+        _selectedVideoError = null;
+      });
+      return true;
+    } catch (e) {
+      debugPrint('Error checking video size: $e');
+      if (mounted) {
+        setState(() {
+          _selectedVideoError = 'Error checking video size';
+        });
+      }
+      return false;
+    }
+  }
+
   Future<void> _pickVideo() async {
     final picker = ImagePicker();
-    final video = await picker.pickVideo(source: widget.source);
+    final video = await picker.pickVideo(
+      source: widget.source,
+      maxDuration:
+          const Duration(minutes: 5), // Limit video duration to 5 minutes
+    );
 
     if (video != null) {
-      setState(() {
-        _selectedVideoPath = video.path;
-        _uploadSuccess = false;
-      });
+      // Check video size before setting it
+      if (await _checkVideoSize(video.path)) {
+        setState(() {
+          _selectedVideoPath = video.path;
+          _uploadSuccess = false;
+        });
+      } else {
+        // If video is too large, clear the selection
+        setState(() {
+          _selectedVideoPath = null;
+          _uploadSuccess = false;
+        });
+      }
     } else {
       // If no video was selected/captured, go back
       if (mounted) {
@@ -57,6 +101,7 @@ class _UploadScreenState extends State<UploadScreen> {
       _tagController.clear();
       _foodTags.clear();
       _uploadSuccess = false;
+      _selectedVideoError = null;
     });
   }
 
@@ -74,6 +119,11 @@ class _UploadScreenState extends State<UploadScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Please select a video first')),
       );
+      return;
+    }
+
+    // Double-check file size before upload
+    if (!await _checkVideoSize(_selectedVideoPath!)) {
       return;
     }
 
@@ -211,6 +261,16 @@ class _UploadScreenState extends State<UploadScreen> {
                   'Selected video: ${_selectedVideoPath!.split('/').last}',
                   style: Theme.of(context).textTheme.bodyMedium,
                 ),
+                if (_selectedVideoError != null) ...[
+                  const SizedBox(height: 8),
+                  Text(
+                    _selectedVideoError!,
+                    style: TextStyle(
+                      color: Theme.of(context).colorScheme.error,
+                      fontSize: 14,
+                    ),
+                  ),
+                ],
               ],
               const SizedBox(height: 16),
               TextField(
@@ -262,7 +322,9 @@ class _UploadScreenState extends State<UploadScreen> {
                 ),
               const SizedBox(height: 24),
               ElevatedButton(
-                onPressed: _isUploading ? null : _uploadVideo,
+                onPressed: _isUploading || _selectedVideoError != null
+                    ? null
+                    : _uploadVideo,
                 child: _isUploading
                     ? const SizedBox(
                         height: 20,
