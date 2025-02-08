@@ -1,6 +1,8 @@
 Fixes:
 1) Cloud function: Remove trigger on blob data (matches search file structure rn)
 2) Fix thumbnail generation bug too wide: https://chatgpt.com/c/67a3781e-aa9c-8004-89b4-90c420342044
+3) Fix video screen slightly misaligned on the right side (video blur?)
+4) Newly uploaded videos don't load instantly -> Fixed by eventual feed algorithm (which won't load newly uploaded videos instantly)
 
 Beautification
 1) Welcome flow, showcasing features
@@ -33,12 +35,19 @@ Thursday 2/6
 3) Misc: profile video tab, feed profile icon, profile edit profile pics (done)
 
 Friday 2/7
-0) Fix Profile video bugs: (thumbnail stretched, videos should be same as feed ui)
-1) Feature:delete videos
-2) Fix liking other vids, simplify bottom nav UI
-3) iOs build? Android production build?
-4) Firebase beta distributions?
+1) Feature:delete videos (done)
+2) Fix liking other vids, simplify bottom nav UI (done)
+3) Trends and preferences snapshots (done)
+4) Upload confirmation (done)
+
+Saturday 2/8
+1) Code audit
+"It's time for a code audit! Go through the codebase (the code itself, ignore the documentation), into every nook and cranny, and provide a report on things to improve. Note down any unnecessary duplicated code, potential for refactoring, or just suggestions you think would help the codebase me more maintainable."
+
 
 Beyond
 1) Feed algorithm
 2) Explore page / AI features
+3) iOs build? Android production build?
+4) Firebase beta distributions?
+5) Fix Profile video bugs: (thumbnail stretched, videos should be same as feed ui)

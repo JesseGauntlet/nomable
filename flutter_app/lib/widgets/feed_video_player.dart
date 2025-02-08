@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:video_player/video_player.dart';
 import 'dart:async';
-import 'adaptive_video_player.dart';
 import 'package:chewie/chewie.dart';
 
 class FeedVideoPlayer extends StatefulWidget {
@@ -73,6 +72,7 @@ class _FeedVideoPlayerState extends State<FeedVideoPlayer> {
   bool _wasPrefetched = false;
   VideoPlayerController? _controller;
   ChewieController? _chewieController;
+  String _currentQuality = 'Unknown'; // Track current video quality
 
   @override
   void initState() {
@@ -112,23 +112,23 @@ class _FeedVideoPlayerState extends State<FeedVideoPlayer> {
       if (widget.hlsUrl != null &&
           FeedVideoPlayer._prefetchCache.containsKey(widget.hlsUrl)) {
         urlToUse = widget.hlsUrl;
+        _currentQuality = 'HLS';
       } else if (widget.previewUrl != null &&
           FeedVideoPlayer._prefetchCache.containsKey(widget.previewUrl)) {
         urlToUse = widget.previewUrl;
-      } else if (FeedVideoPlayer._prefetchCache.containsKey(widget.videoUrl)) {
-        urlToUse = widget.videoUrl;
+        _currentQuality = 'Preview';
       }
 
       if (urlToUse != null) {
         debugPrint('Using prefetched controller for: $urlToUse');
-        // Clean up existing local controllers but preserve the global cache; do not remove the cached controller
+        // Clean up existing local controllers but preserve the global cache
         _cleanupControllers(preserveCache: true);
 
         final cached = FeedVideoPlayer._prefetchCache[urlToUse]!;
         _controller = cached.$1;
         _chewieController = cached.$2;
         _wasPrefetched = true;
-        FeedVideoPlayer._markUrlAsUsed(urlToUse); // Mark as recently used
+        FeedVideoPlayer._markUrlAsUsed(urlToUse);
 
         if (!(_controller!.value.isPlaying)) {
           await _controller!.play();
@@ -148,13 +148,10 @@ class _FeedVideoPlayerState extends State<FeedVideoPlayer> {
       }
 
       // Only prefetch next video
-      if (widget.nextHlsUrl != null ||
-          widget.nextPreviewUrl != null ||
-          widget.nextVideoUrl != null) {
+      if (widget.nextHlsUrl != null || widget.nextPreviewUrl != null) {
         _prefetchVideo(
           hlsUrl: widget.nextHlsUrl,
           previewUrl: widget.nextPreviewUrl,
-          videoUrl: widget.nextVideoUrl,
         );
       }
     } catch (e) {
@@ -175,6 +172,7 @@ class _FeedVideoPlayerState extends State<FeedVideoPlayer> {
         await _controller!.initialize();
         _controller!.addListener(_errorListener);
         _setupChewieController();
+        _currentQuality = 'HLS';
         if (mounted) {
           setState(() => _isInitialized = true);
         }
@@ -185,20 +183,25 @@ class _FeedVideoPlayerState extends State<FeedVideoPlayer> {
       }
     }
 
-    // Fall back to preview or original
-    try {
-      final urlToUse = widget.previewUrl ?? widget.videoUrl;
-      _controller = VideoPlayerController.networkUrl(Uri.parse(urlToUse));
-      await _controller!.initialize();
-      _controller!.addListener(_errorListener);
-      _setupChewieController();
-      if (mounted) {
-        setState(() => _isInitialized = true);
+    // Fall back to preview only
+    if (widget.previewUrl != null) {
+      try {
+        _controller =
+            VideoPlayerController.networkUrl(Uri.parse(widget.previewUrl!));
+        await _controller!.initialize();
+        _controller!.addListener(_errorListener);
+        _setupChewieController();
+        _currentQuality = 'Preview';
+        if (mounted) {
+          setState(() => _isInitialized = true);
+        }
+      } catch (e) {
+        debugPrint('Error initializing player: $e');
+        _cleanupControllers();
+        rethrow;
       }
-    } catch (e) {
-      debugPrint('Error initializing player: $e');
-      _cleanupControllers();
-      rethrow; // Propagate error to parent for handling
+    } else {
+      throw Exception('No HLS or preview URL available');
     }
   }
 
@@ -210,7 +213,7 @@ class _FeedVideoPlayerState extends State<FeedVideoPlayer> {
           autoPlay: true,
           looping: true,
           showControls: false,
-          aspectRatio: _controller!.value.aspectRatio,
+          aspectRatio: 9 / 16, // Fixed aspect ratio for vertical videos
           showOptions: false,
           showControlsOnInitialize: false,
         );
@@ -343,25 +346,84 @@ class _FeedVideoPlayerState extends State<FeedVideoPlayer> {
         Container(
           color: Colors.black,
           child: Center(
-            child: AspectRatio(
-              aspectRatio: _controller!.value.aspectRatio,
-              child: Chewie(controller: _chewieController!),
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                // Use 9:16 aspect ratio for vertical video format
+                const desiredAspectRatio = 9 / 16;
+
+                // Calculate dimensions to fill width while maintaining aspect ratio
+                double width = constraints.maxWidth;
+                double height = width / desiredAspectRatio;
+
+                // If height would exceed screen, constrain by height instead
+                if (height > constraints.maxHeight) {
+                  height = constraints.maxHeight;
+                  width = height * desiredAspectRatio;
+                }
+
+                return SizedBox(
+                  width: width,
+                  height: height,
+                  child: ClipRect(
+                    child: Transform.scale(
+                      scale: 1.0, // Adjust this value if needed to zoom
+                      child: Center(
+                        child: AspectRatio(
+                          aspectRatio: desiredAspectRatio,
+                          child: Chewie(controller: _chewieController!),
+                        ),
+                      ),
+                    ),
+                  ),
+                );
+              },
             ),
           ),
         ),
-        // Temporary UI indicator overlay for performance measurements
+        // Performance and quality overlay
         Positioned(
           top: 10,
           left: 10,
-          child: Container(
-            padding: const EdgeInsets.all(4),
-            color: Colors.black54,
-            child: Text(
-              _wasPrefetched
-                  ? 'Prefetched in ${_loadDuration}ms'
-                  : 'Loaded fresh in ${_loadDuration}ms',
-              style: const TextStyle(color: Colors.white, fontSize: 12),
-            ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(4),
+                color: Colors.black54,
+                child: Text(
+                  _wasPrefetched
+                      ? 'Prefetched in ${_loadDuration}ms'
+                      : 'Loaded fresh in ${_loadDuration}ms',
+                  style: const TextStyle(color: Colors.white, fontSize: 12),
+                ),
+              ),
+              const SizedBox(height: 4),
+              Container(
+                padding: const EdgeInsets.all(4),
+                color: Colors.black54,
+                child: Row(
+                  children: [
+                    Container(
+                      width: 8,
+                      height: 8,
+                      margin: const EdgeInsets.only(right: 4),
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: _currentQuality == 'HLS'
+                            ? Colors.green
+                            : _currentQuality == 'Preview'
+                                ? Colors.orange
+                                : Colors.red,
+                      ),
+                    ),
+                    Text(
+                      'Quality: $_currentQuality',
+                      style: const TextStyle(color: Colors.white, fontSize: 12),
+                    ),
+                  ],
+                ),
+              ),
+            ],
           ),
         ),
       ],
