@@ -34,8 +34,9 @@ class UserService {
     try {
       // Use provided uid or get from current user
       final userId = uid ?? _auth.currentUser?.uid;
-      if (userId == null)
+      if (userId == null) {
         throw Exception('No user ID provided or authenticated user found');
+      }
 
       // Always get email from current user if available
       final userEmail = _auth.currentUser?.email;
