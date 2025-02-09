@@ -49,6 +49,7 @@ build/
 .idea/
 .vscode/
 .DS_Store
+**/pubspec.lock
 
 # Miscellaneous Flutter
 *.class
