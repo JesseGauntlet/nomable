@@ -396,16 +396,12 @@ class UserService {
           await _firestore.collection('users').doc(currentUser.uid).get();
       final currentSwipeCount = userDoc.data()?['swipeCount'] ?? 0;
 
-      // Only increment if less than max swipes
-      if (currentSwipeCount < maxDailySwipes) {
-        await _firestore.collection('users').doc(currentUser.uid).update({
-          'swipeCount': FieldValue.increment(1),
-          'updatedAt': FieldValue.serverTimestamp(),
-        });
-        return currentSwipeCount + 1;
-      }
-
-      return currentSwipeCount;
+      // Always increment the swipe count
+      await _firestore.collection('users').doc(currentUser.uid).update({
+        'swipeCount': FieldValue.increment(1),
+        'updatedAt': FieldValue.serverTimestamp(),
+      });
+      return currentSwipeCount + 1;
     } catch (e) {
       print('Error incrementing swipe count: $e');
       rethrow;

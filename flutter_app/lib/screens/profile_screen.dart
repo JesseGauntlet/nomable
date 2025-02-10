@@ -5,6 +5,7 @@ import '../services/auth_service.dart';
 import '../widgets/profile/profile_cravings_tab.dart';
 import '../widgets/profile/profile_trends_tab.dart';
 import '../widgets/profile/profile_videos_tab.dart';
+import '../widgets/profile/swipe_progress_avatar.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'dart:io';
@@ -199,18 +200,12 @@ class _ProfileScreenState extends State<ProfileScreen>
                 padding: EdgeInsets.fromLTRB(16, topPadding + 16, 16, 16),
                 child: Column(
                   children: [
-                    // Profile Picture
-                    CircleAvatar(
+                    // Profile Picture with Swipe Progress
+                    SwipeProgressAvatar(
+                      photoUrl: _user?.photoUrl,
+                      name: _user!.name,
+                      currentSwipes: _user!.swipeCount,
                       radius: 42,
-                      backgroundImage: _user?.photoUrl != null
-                          ? NetworkImage(_user!.photoUrl!)
-                          : null,
-                      child: _user?.photoUrl == null
-                          ? Text(
-                              _user!.name[0].toUpperCase(),
-                              style: const TextStyle(fontSize: 27),
-                            )
-                          : null,
                     ),
                     const SizedBox(height: 12),
                     // Name and Edit Button

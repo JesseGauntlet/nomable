@@ -22,6 +22,7 @@ Features
 1) Explore page
 2) Daily resets of cravings / manual test reset button
 3) fix the like/heart button in the feed to implement tracking in users subcollection
+4) Add an option to selectively "like" certain tags if a video has multiple tags. (Start with all tags selected, tap on tag to deselect).
 
 Security
 1) Appcheck
@@ -43,6 +44,9 @@ Friday 2/7
 Saturday 2/8
 1) Code audit
 "It's time for a code audit! Go through the codebase (the code itself, ignore the documentation), into every nook and cranny, and provide a report on things to improve. Note down any unnecessary duplicated code, potential for refactoring, or just suggestions you think would help the codebase me more maintainable."
+
+Monday 2/10 (AI week)
+1) Daily Swipe Froupin' time group voting feature
 
 
 Beyond

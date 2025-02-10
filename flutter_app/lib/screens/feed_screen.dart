@@ -220,22 +220,20 @@ class _FeedScreenState extends State<FeedScreen> {
 
             // Increment swipe count
             try {
-              if (_currentSwipes < UserService.maxDailySwipes) {
-                final newCount = await _userService.incrementSwipeCount();
-                setState(() {
-                  _currentSwipes = newCount;
-                });
+              final newCount = await _userService.incrementSwipeCount();
+              setState(() {
+                _currentSwipes = newCount;
+              });
 
-                // Show completion message when reaching limit
-                if (newCount >= UserService.maxDailySwipes && mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text(
-                          'Daily swipes complete! Your preferences have been updated.'),
-                      duration: Duration(seconds: 3),
-                    ),
-                  );
-                }
+              // Show completion message when reaching limit for the first time
+              if (newCount == UserService.maxDailySwipes && mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text(
+                        'Daily swipes complete! Your preferences have been updated.'),
+                    duration: Duration(seconds: 3),
+                  ),
+                );
               }
             } catch (e) {
               print('Error incrementing swipe count: $e');
@@ -253,17 +251,18 @@ class _FeedScreenState extends State<FeedScreen> {
             );
           },
         ),
-        // Swipe progress indicator
-        Positioned(
-          top: MediaQuery.of(context).padding.top + 16,
-          left: 0,
-          right: 0,
-          child: Center(
-            child: SwipeProgress(
-              currentSwipes: _currentSwipes,
+        // Swipe progress indicator (only show until goal is reached)
+        if (_currentSwipes < UserService.maxDailySwipes)
+          Positioned(
+            top: MediaQuery.of(context).padding.top + 16,
+            left: 0,
+            right: 0,
+            child: Center(
+              child: SwipeProgress(
+                currentSwipes: _currentSwipes,
+              ),
             ),
           ),
-        ),
       ],
     );
   }
