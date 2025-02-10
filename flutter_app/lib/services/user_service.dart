@@ -6,6 +6,9 @@ class UserService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final FirebaseAuth _auth = FirebaseAuth.instance;
 
+  // Constants
+  static const int maxDailySwipes = 10;
+
   // Get current user data
   Future<UserModel?> getCurrentUser() async {
     try {
@@ -40,36 +43,33 @@ class UserService {
 
       // Always get email from current user if available
       final userEmail = _auth.currentUser?.email;
+      if (userEmail == null) {
+        throw Exception('User email is required');
+      }
 
+      // Base data that's always included
       final data = {
         'name': name,
         'email': userEmail,
-        if (photoUrl != null) 'photoUrl': photoUrl,
-        if (bio != null) 'bio': bio,
-        if (foodPreferences != null) 'foodPreferences': foodPreferences,
-        if (currentCraving != null) 'currentCraving': currentCraving,
         'videosCount': 0,
         'followersCount': 0,
         'followingCount': 0,
         'heartCount': 0,
+        'swipeCount': 0,
+        'foodPreferences': foodPreferences ?? {},
+        'currentCraving': currentCraving ?? '',
+        'createdAt': FieldValue.serverTimestamp(),
         'updatedAt': FieldValue.serverTimestamp(),
       };
 
-      // Only set createdAt and initialize fields for new users
-      if (uid != null) {
-        data['createdAt'] = FieldValue.serverTimestamp();
-        // Initialize other fields for new users if not provided
-        if (foodPreferences == null) {
-          data['foodPreferences'] = {};
-        }
-        if (currentCraving == null) {
-          data['currentCraving'] = '';
-        }
-      }
+      // Add optional fields if provided
+      if (photoUrl != null) data['photoUrl'] = photoUrl;
+      if (bio != null) data['bio'] = bio;
 
+      // Use set with merge: false for new users to ensure all required fields are present
       await _firestore.collection('users').doc(userId).set(
             data,
-            SetOptions(merge: true),
+            SetOptions(merge: false),
           );
     } catch (e) {
       throw Exception('Failed to update user data: $e');
@@ -380,6 +380,53 @@ class UserService {
     } catch (e) {
       print('Error getting user by ID: $e');
       return null;
+    }
+  }
+
+  // Increment the user's daily swipe count
+  Future<int> incrementSwipeCount() async {
+    try {
+      final currentUser = _auth.currentUser;
+      if (currentUser == null) {
+        throw Exception('No authenticated user found');
+      }
+
+      // Get current user document
+      final userDoc =
+          await _firestore.collection('users').doc(currentUser.uid).get();
+      final currentSwipeCount = userDoc.data()?['swipeCount'] ?? 0;
+
+      // Only increment if less than max swipes
+      if (currentSwipeCount < maxDailySwipes) {
+        await _firestore.collection('users').doc(currentUser.uid).update({
+          'swipeCount': FieldValue.increment(1),
+          'updatedAt': FieldValue.serverTimestamp(),
+        });
+        return currentSwipeCount + 1;
+      }
+
+      return currentSwipeCount;
+    } catch (e) {
+      print('Error incrementing swipe count: $e');
+      rethrow;
+    }
+  }
+
+  // Reset user's daily swipe count
+  Future<void> resetSwipeCount() async {
+    try {
+      final currentUser = _auth.currentUser;
+      if (currentUser == null) {
+        throw Exception('No authenticated user found');
+      }
+
+      await _firestore.collection('users').doc(currentUser.uid).update({
+        'swipeCount': 0,
+        'updatedAt': FieldValue.serverTimestamp(),
+      });
+    } catch (e) {
+      print('Error resetting swipe count: $e');
+      rethrow;
     }
   }
 }

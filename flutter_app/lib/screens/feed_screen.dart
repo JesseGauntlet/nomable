@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import '../models/feed_item.dart';
 import '../widgets/video_item.dart';
+import '../widgets/swipe_progress.dart';
+import '../services/user_service.dart';
 
 // Feed screen of videos / image[] posts (todo)
 class FeedScreen extends StatefulWidget {
@@ -19,6 +22,8 @@ class _FeedScreenState extends State<FeedScreen> {
   bool _hasMoreItems = true;
   final PageController _pageController = PageController();
   DocumentSnapshot? _lastDocument; // Track the last document for pagination
+  int _currentSwipes = 0;
+  final _userService = UserService();
 
   // Number of items to fetch per page
   static const int _itemsPerPage = 10;
@@ -34,12 +39,39 @@ class _FeedScreenState extends State<FeedScreen> {
       ),
     );
     _loadFeed(refresh: true);
+    _loadSwipeCount();
   }
 
   @override
   void dispose() {
     _pageController.dispose();
     super.dispose();
+  }
+
+  Future<void> _loadSwipeCount() async {
+    try {
+      final user = FirebaseAuth.instance.currentUser;
+      if (user == null) return;
+
+      final userDoc = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(user.uid)
+          .get();
+
+      if (mounted) {
+        setState(() {
+          _currentSwipes = userDoc.data()?['swipeCount'] ?? 0;
+        });
+      }
+    } catch (e) {
+      print('Error loading swipe count: $e');
+    }
+  }
+
+  void _onSwipeCountUpdated(int newCount) {
+    setState(() {
+      _currentSwipes = newCount;
+    });
   }
 
   Future<void> _loadFeed({bool refresh = false}) async {
@@ -175,26 +207,64 @@ class _FeedScreenState extends State<FeedScreen> {
       return _buildLoadingState();
     }
 
-    return PageView.builder(
-      controller: _pageController,
-      scrollDirection: Axis.vertical,
-      onPageChanged: (index) {
-        // If we're nearing the end of our loaded items, fetch more
-        if (index >= _feedItems.length - 2) {
-          _loadFeed();
-        }
-      },
-      itemCount: _feedItems.length,
-      itemBuilder: (context, index) {
-        final currentItem = _feedItems[index];
-        final nextItem =
-            index < _feedItems.length - 1 ? _feedItems[index + 1] : null;
+    return Stack(
+      children: [
+        PageView.builder(
+          controller: _pageController,
+          scrollDirection: Axis.vertical,
+          onPageChanged: (index) async {
+            // Load more items if needed
+            if (index >= _feedItems.length - 2) {
+              _loadFeed();
+            }
 
-        return VideoItem(
-          item: currentItem,
-          nextItem: nextItem,
-        );
-      },
+            // Increment swipe count
+            try {
+              if (_currentSwipes < UserService.maxDailySwipes) {
+                final newCount = await _userService.incrementSwipeCount();
+                setState(() {
+                  _currentSwipes = newCount;
+                });
+
+                // Show completion message when reaching limit
+                if (newCount >= UserService.maxDailySwipes && mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text(
+                          'Daily swipes complete! Your preferences have been updated.'),
+                      duration: Duration(seconds: 3),
+                    ),
+                  );
+                }
+              }
+            } catch (e) {
+              print('Error incrementing swipe count: $e');
+            }
+          },
+          itemCount: _feedItems.length,
+          itemBuilder: (context, index) {
+            final currentItem = _feedItems[index];
+            final nextItem =
+                index < _feedItems.length - 1 ? _feedItems[index + 1] : null;
+
+            return VideoItem(
+              item: currentItem,
+              nextItem: nextItem,
+            );
+          },
+        ),
+        // Swipe progress indicator
+        Positioned(
+          top: MediaQuery.of(context).padding.top + 16,
+          left: 0,
+          right: 0,
+          child: Center(
+            child: SwipeProgress(
+              currentSwipes: _currentSwipes,
+            ),
+          ),
+        ),
+      ],
     );
   }
 }

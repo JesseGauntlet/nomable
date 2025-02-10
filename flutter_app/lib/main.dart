@@ -10,6 +10,7 @@ import 'screens/friends_screen.dart';
 import 'screens/video_source_screen.dart';
 import 'screens/explore_screen.dart';
 import 'services/auth_service.dart';
+import 'services/notification_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -19,6 +20,16 @@ void main() async {
       await Firebase.initializeApp(
         options: DefaultFirebaseOptions.currentPlatform,
       );
+    }
+
+    // Initialize notification service after Firebase is initialized
+    // and wrap in try-catch to prevent app crash
+    try {
+      final notificationService = NotificationService();
+      await notificationService.initialize();
+    } catch (e) {
+      print('Error initializing notifications: $e');
+      // Continue app initialization even if notifications fail
     }
   } catch (e) {
     if (e.toString().contains('duplicate-app')) {

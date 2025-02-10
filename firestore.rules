@@ -26,20 +26,22 @@ service cloud.firestore {
       allow read: if isAuthenticated();
       allow create: if isOwner(userId) && 
         hasValidFields(
-          ['name', 'email', 'createdAt', 'updatedAt', 'videosCount', 'followersCount', 'followingCount', 'foodPreferences', 'currentCraving'],
-          ['photoUrl', 'bio', 'heartCount']
+          ['name', 'email', 'createdAt', 'updatedAt', 'videosCount', 'followersCount', 'followingCount', 'foodPreferences', 'currentCraving', 'swipeCount'],
+          ['photoUrl', 'bio', 'heartCount', 'fcmToken']
         ) &&
         request.resource.data.foodPreferences is map &&
-        request.resource.data.currentCraving is string;
+        request.resource.data.currentCraving is string &&
+        request.resource.data.swipeCount is number;
       allow update: if isAuthenticated() && (
         // Case 1: Owner updating their profile
         (isOwner(userId) &&
           hasValidFields(
-            ['name', 'email', 'updatedAt', 'videosCount', 'followersCount', 'followingCount', 'foodPreferences', 'currentCraving'],
-            ['photoUrl', 'bio', 'heartCount']
+            ['name', 'email', 'updatedAt', 'videosCount', 'followersCount', 'followingCount', 'foodPreferences', 'currentCraving', 'swipeCount'],
+            ['photoUrl', 'bio', 'heartCount', 'fcmToken']
           ) &&
           request.resource.data.foodPreferences is map &&
-          request.resource.data.currentCraving is string
+          request.resource.data.currentCraving is string &&
+          request.resource.data.swipeCount is number
         ) ||
         // Case 2: Owner incrementing or decrementing their videosCount
         (isOwner(userId) &&
@@ -76,6 +78,24 @@ service cloud.firestore {
           isOwner(userId) &&
           request.resource.data.diff(resource.data).affectedKeys().hasOnly(['foodPreferences', 'updatedAt']) &&
           request.resource.data.foodPreferences.size() == 0
+        ) ||
+        // Case 8: Allow owner to update their swipeCount
+        (
+          isOwner(userId) &&
+          request.resource.data.diff(resource.data).affectedKeys().hasOnly(['swipeCount', 'updatedAt']) &&
+          request.resource.data.swipeCount is number &&
+          (
+            // Allow incrementing by 1 up to 10
+            (request.resource.data.swipeCount == resource.data.swipeCount + 1 && request.resource.data.swipeCount <= 10) ||
+            // Allow resetting to 0
+            request.resource.data.swipeCount == 0
+          )
+        ) ||
+        // Case 9: Allow owner to update their FCM token
+        (
+          isOwner(userId) &&
+          request.resource.data.diff(resource.data).affectedKeys().hasOnly(['fcmToken', 'updatedAt']) &&
+          request.resource.data.fcmToken is string
         )
       );
       allow delete: if false; // Prevent user deletion through client
@@ -178,6 +198,21 @@ service cloud.firestore {
         allow write: if isAuthenticated() && 
           get(/databases/$(database)/documents/groups/$(groupId)).data.creatorId == request.auth.uid;
       }
+    }
+
+    // Notifications collection
+    match /notifications/{notificationId} {
+      allow read: if isAuthenticated() && 
+        (request.auth.uid in resource.data.tokens || isServiceAccount());
+      allow create: if isAuthenticated() && 
+        hasValidFields(
+          ['tokens', 'title', 'body', 'type', 'groupId', 'timestamp'],
+          []
+        ) &&
+        request.resource.data.tokens is list &&
+        request.resource.data.type == 'group_vote';
+      allow update: if false; // Notifications should be immutable
+      allow delete: if false; // Let them expire naturally
     }
   }
 } 

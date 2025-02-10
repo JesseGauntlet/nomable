@@ -284,4 +284,50 @@ exports.generatePreview = functions
 
     console.log('Processing complete');
     return null;
+  });
+
+// Cloud Function to send notifications to group members
+exports.sendGroupNotifications = functions.firestore
+  .document('notifications/{notificationId}')
+  .onCreate(async (snap, context) => {
+    try {
+      const notification = snap.data();
+      const { tokens, title, body } = notification;
+
+      if (!tokens || tokens.length === 0) {
+        console.log('No tokens provided');
+        return null;
+      }
+
+      const message = {
+        notification: {
+          title,
+          body,
+        },
+        tokens: tokens,
+        android: {
+          notification: {
+            channelId: 'group_vote_channel',
+            priority: 'high',
+          },
+        },
+        apns: {
+          payload: {
+            aps: {
+              sound: 'default',
+              badge: 1,
+            },
+          },
+        },
+      };
+
+      // Send the messages
+      const response = await admin.messaging().sendMulticast(message);
+
+      console.log('Successfully sent messages:', response);
+      return response;
+    } catch (error) {
+      console.error('Error sending notifications:', error);
+      return null;
+    }
   }); 

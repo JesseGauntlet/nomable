@@ -9,6 +9,9 @@ class UserModel {
   final int followersCount;
   final int followingCount;
   final int heartCount; // Total likes received
+  final int swipeCount; // Daily swipes count
+  final String?
+      fcmToken; // Firebase Cloud Messaging token for push notifications
   final String? bio;
   final DateTime? createdAt;
   final DateTime? updatedAt;
@@ -24,6 +27,8 @@ class UserModel {
     this.followersCount = 0,
     this.followingCount = 0,
     this.heartCount = 0,
+    this.swipeCount = 0,
+    this.fcmToken,
     this.bio,
     this.createdAt,
     this.updatedAt,
@@ -42,6 +47,8 @@ class UserModel {
       followersCount: data['followersCount'] ?? 0,
       followingCount: data['followingCount'] ?? 0,
       heartCount: data['heartCount'] ?? 0,
+      swipeCount: data['swipeCount'] ?? 0,
+      fcmToken: data['fcmToken'],
       bio: data['bio'],
       createdAt: (data['createdAt'] as Timestamp?)?.toDate(),
       updatedAt: (data['updatedAt'] as Timestamp?)?.toDate(),
@@ -59,6 +66,8 @@ class UserModel {
       'followersCount': followersCount,
       'followingCount': followingCount,
       'heartCount': heartCount,
+      'swipeCount': swipeCount,
+      'fcmToken': fcmToken,
       'bio': bio,
       if (createdAt != null) 'createdAt': Timestamp.fromDate(createdAt!),
       if (updatedAt != null) 'updatedAt': Timestamp.fromDate(updatedAt!),
@@ -75,6 +84,8 @@ class UserModel {
     int? followersCount,
     int? followingCount,
     int? heartCount,
+    int? swipeCount,
+    String? fcmToken,
     String? bio,
     DateTime? createdAt,
     DateTime? updatedAt,
@@ -90,6 +101,8 @@ class UserModel {
       followersCount: followersCount ?? this.followersCount,
       followingCount: followingCount ?? this.followingCount,
       heartCount: heartCount ?? this.heartCount,
+      swipeCount: swipeCount ?? this.swipeCount,
+      fcmToken: fcmToken ?? this.fcmToken,
       bio: bio ?? this.bio,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../services/auth_service.dart';
 
 class ExploreScreen extends StatelessWidget {
   const ExploreScreen({super.key});
@@ -10,6 +11,26 @@ class ExploreScreen extends StatelessWidget {
       child: Scaffold(
         appBar: AppBar(
           title: const Text('Explore'),
+          actions: [
+            IconButton(
+              icon: const Icon(Icons.logout),
+              tooltip: 'Debug: Logout',
+              onPressed: () async {
+                try {
+                  await AuthService().signOut();
+                  if (context.mounted) {
+                    Navigator.of(context).pushReplacementNamed('/login');
+                  }
+                } catch (e) {
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('Error logging out: $e')),
+                    );
+                  }
+                }
+              },
+            ),
+          ],
           bottom: const TabBar(
             tabs: [
               Tab(text: 'Restaurants'),
