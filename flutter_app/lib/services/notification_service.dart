@@ -2,14 +2,20 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:firebase_core/firebase_core.dart';
 
 class NotificationService {
   final FirebaseMessaging _messaging = FirebaseMessaging.instance;
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final FirebaseAuth _auth = FirebaseAuth.instance;
+  static final GlobalKey<ScaffoldMessengerState> messengerKey =
+      GlobalKey<ScaffoldMessengerState>();
 
   // Initialize notification settings and request permissions
   Future<void> initialize() async {
+    // Set up background message handler
+    FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
+
     // Request permission for iOS
     NotificationSettings settings = await _messaging.requestPermission(
       alert: true,
@@ -51,14 +57,23 @@ class NotificationService {
     }
   }
 
+  // Background message handler
+  static Future<void> _firebaseMessagingBackgroundHandler(
+      RemoteMessage message) async {
+    print("Handling a background message: ${message.messageId}");
+    // Ensure Firebase is initialized
+    if (Firebase.apps.isEmpty) {
+      await Firebase.initializeApp();
+    }
+    // The notification will be shown automatically by the system
+  }
+
   // Handle foreground messages
   void _handleForegroundMessage(RemoteMessage message) {
+    print("Received foreground message: ${message.notification?.title}");
     // Show a simple dialog or snackbar when a message is received
     if (message.notification != null) {
-      // Find the current context and show a snackbar
-      // Note: This requires a BuildContext, so you might want to use a GlobalKey or
-      // pass the context from the UI layer
-      final messenger = GlobalKey<ScaffoldMessengerState>().currentState;
+      final messenger = messengerKey.currentState;
       if (messenger != null) {
         messenger.showSnackBar(
           SnackBar(
@@ -72,6 +87,8 @@ class NotificationService {
             ),
           ),
         );
+      } else {
+        print("Could not show notification: no messenger state available");
       }
     }
   }
