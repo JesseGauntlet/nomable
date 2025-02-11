@@ -12,7 +12,7 @@
       "npm --prefix \"$RESOURCE_DIR\" install"
     ],
     "generatePreviewV2": {
-      "memory": "1GB",
+      "memory": "2GB",
       "cpu": 1,
       "gen2": true
     }

@@ -15,7 +15,7 @@ admin.initializeApp();
 // Cloud Function triggered on finalization (upload) of a storage object
 exports.generatePreviewV2 = onObjectFinalized({
   timeoutSeconds: 300,
-  memory: '1GB',
+  memory: '2GiB',
 }, async (event) => {
   // Skip processing if the file is not in the videos directory
   if (!event.data.name.startsWith('videos/')) {
@@ -26,6 +26,23 @@ exports.generatePreviewV2 = onObjectFinalized({
   const fileBucket = event.data.bucket;
   const filePath = event.data.name;
   const contentType = event.data.contentType;
+
+  // Parse paths early
+  const pathParts = filePath.split('/');
+  if (pathParts.length < 3) {
+    console.error('Invalid file path structure:', filePath);
+    return null;
+  }
+
+  // Extract userId and define destinations early
+  const userId = pathParts[1];
+  const fileName = path.basename(filePath);
+  const previewFileName = fileName.replace('.mp4', '_preview.mp4');
+  const thumbnailFileName = fileName.replace('.mp4', '_thumb.jpg');
+  const hlsBaseName = fileName.replace('.mp4', '');
+  const previewDestination = `previews/${userId}/${previewFileName}`;
+  const thumbnailDestination = `thumbnails/${userId}/${thumbnailFileName}`;
+  const hlsDestinationBase = `hls/${userId}/${hlsBaseName}`;
 
   // Skip processing if the file is already a preview
   if (filePath.includes('_preview.mp4')) {
@@ -40,7 +57,6 @@ exports.generatePreviewV2 = onObjectFinalized({
   }
 
   // Download the video file to a temporary directory
-  const fileName = path.basename(filePath);
   const tempFilePath = path.join(os.tmpdir(), fileName);
   const bucket = admin.storage().bucket(fileBucket);
   
@@ -49,9 +65,6 @@ exports.generatePreviewV2 = onObjectFinalized({
   console.log('Downloaded video to:', tempFilePath);
 
   // Define output file paths for the preview video and thumbnail
-  const previewFileName = fileName.replace('.mp4', '_preview.mp4');
-  const thumbnailFileName = fileName.replace('.mp4', '_thumb.jpg');
-  const hlsBaseName = fileName.replace('.mp4', '');
   const tempPreviewFilePath = path.join(os.tmpdir(), previewFileName);
   const tempThumbnailPath = path.join(os.tmpdir(), thumbnailFileName);
   const tempHlsDir = path.join(os.tmpdir(), 'hls', hlsBaseName);
@@ -66,171 +79,151 @@ exports.generatePreviewV2 = onObjectFinalized({
   }
 
   try {
-    // Generate thumbnail from the first frame
-    console.log('Generating thumbnail...');
-    await new Promise((resolve, reject) => {
-      ffmpeg(tempFilePath)
-        .screenshots({
-          timestamps: [1], // Take screenshot at 1 second to avoid black frames
-          filename: thumbnailFileName,
-          folder: os.tmpdir(),
-          size: '480x?', // Fixed width, auto height to preserve aspect ratio
-          quality: 90 // High quality JPEG
-        })
-        .on('end', () => {
-          console.log('Thumbnail generated successfully');
-          resolve();
-        })
-        .on('error', (err) => {
-          console.error('Error generating thumbnail:', err);
-          reject(err);
-        });
-    });
-
-    // Generate HLS streams
-    console.log('Starting HLS transcoding...');
-    await new Promise((resolve, reject) => {
-      ffmpeg(tempFilePath)
-        .outputOptions([
-          // HLS Specific settings
-          '-hls_time', '6',        // 6 second segment duration
-          '-hls_list_size', '0',   // Keep all segments in the playlist
-          '-hls_segment_type', 'mpegts',  // Use .ts segments
-          '-hls_segment_filename', path.join(tempHlsDir, 'segment_%03d.ts'),
-          // Video settings
-          '-c:v', 'libx264',     // Use H.264 codec
-          '-crf', '23',          // Constant rate factor (quality)
-          '-preset', 'fast',     // Encoding speed preset
-          '-vf', 'scale=-2:720', // Scale to 720p maintaining aspect ratio
-          // Audio settings
-          '-c:a', 'aac',         // AAC audio codec
-          '-b:a', '128k',        // Audio bitrate
-          '-master_pl_name', 'master.m3u8',
-          '-f', 'hls'
-        ])
-        .output(path.join(tempHlsDir, 'playlist.m3u8'))
-        .on('progress', (progress) => {
-          console.log(`HLS Processing: ${progress.percent}% done`);
-        })
-        .on('end', () => {
-          console.log('HLS streams created successfully');
-          resolve();
-        })
-        .on('error', (err) => {
-          console.error('Error during HLS transcoding:', err);
-          reject(err);
-        })
-        .run();
-    });
-
-    // Generate preview video (keeping as fallback)
-    console.log('Starting preview video transcoding...');
-    await new Promise((resolve, reject) => {
-      ffmpeg(tempFilePath)
-        .outputOptions([
-          '-vf', 'scale=-2:480',
-          '-c:a', 'copy',
-          '-c:v', 'libx264',
-          '-crf', '28',
-          '-preset', 'medium'
-        ])
-        .output(tempPreviewFilePath)
-        .on('progress', (progress) => {
-          console.log(`Processing: ${progress.percent}% done`);
-        })
-        .on('end', () => {
-          console.log('Preview video created successfully');
-          resolve();
-        })
-        .on('error', (err) => {
-          console.error('Error during transcoding:', err);
-          reject(err);
-        })
-        .run();
-    });
-  } catch (error) {
-    console.error('Error in processing:', error);
-    // Clean up any files that might have been created before the error
-    try {
-      if (fs.existsSync(tempFilePath)) fs.unlinkSync(tempFilePath);
-      if (fs.existsSync(tempPreviewFilePath)) fs.unlinkSync(tempPreviewFilePath);
-      if (fs.existsSync(tempThumbnailPath)) fs.unlinkSync(tempThumbnailPath);
-      if (fs.existsSync(tempHlsDir)) {
-        fs.rmSync(tempHlsDir, { recursive: true, force: true });
-      }
-    } catch (cleanupError) {
-      console.error('Error during cleanup after failure:', cleanupError);
-    }
-    return null;
-  }
-
-  // Determine the destination paths
-  const pathParts = filePath.split('/');
-  if (pathParts.length < 3) {
-    console.error('Invalid file path structure:', filePath);
-    // Clean up temporary files before returning
-    try {
-      fs.unlinkSync(tempFilePath);
-      fs.unlinkSync(tempPreviewFilePath);
-      fs.unlinkSync(tempThumbnailPath);
-      fs.rmSync(tempHlsDir, { recursive: true, force: true });
-    } catch (cleanupError) {
-      console.error('Error during cleanup:', cleanupError);
-    }
-    return null;
-  }
-
-  // Extract userId from the path and define destinations
-  const userId = pathParts[1];
-  const previewDestination = `previews/${userId}/${previewFileName}`;
-  const thumbnailDestination = `thumbnails/${userId}/${thumbnailFileName}`;
-  const hlsDestinationBase = `hls/${userId}/${hlsBaseName}`;
-
-  // Upload both the preview video and thumbnail
-  console.log('Uploading preview video, thumbnail, and HLS streams...');
-  try {
-    // Get list of HLS files
-    const hlsFiles = fs.readdirSync(tempHlsDir);
-    
-    // Upload all files
+    // Run all processing in parallel
+    console.log('Starting parallel video processing');
     await Promise.all([
-      bucket.upload(tempPreviewFilePath, {
-        destination: previewDestination,
-        metadata: {
-          contentType: 'video/mp4',
-          metadata: { originalVideo: filePath }
-        },
+      // Thumbnail generation
+      new Promise((resolve, reject) => {
+        console.log('Generating thumbnail...');
+        ffmpeg(tempFilePath)
+          .screenshots({
+            timestamps: [1],
+            filename: thumbnailFileName,
+            folder: os.tmpdir(),
+            size: '480x?',
+            quality: 90
+          })
+          .on('end', async () => {
+            console.log('Thumbnail generated successfully');
+            try {
+              // Upload thumbnail immediately
+              await bucket.upload(tempThumbnailPath, {
+                destination: thumbnailDestination,
+                metadata: {
+                  contentType: 'image/jpeg',
+                  metadata: { originalVideo: filePath }
+                },
+              });
+              await bucket.file(thumbnailDestination).makePublic();
+              // Clean up thumbnail file
+              fs.unlinkSync(tempThumbnailPath);
+              console.log('Thumbnail uploaded and cleaned up');
+            } catch (err) {
+              console.error('Error uploading thumbnail:', err);
+            }
+            resolve();
+          })
+          .on('error', (err) => {
+            console.error('Error generating thumbnail:', err);
+            reject(err);
+          });
       }),
-      bucket.upload(tempThumbnailPath, {
-        destination: thumbnailDestination,
-        metadata: {
-          contentType: 'image/jpeg',
-          metadata: { originalVideo: filePath }
-        },
+      // Preview video generation
+      new Promise((resolve, reject) => {
+        console.log('Starting preview video transcoding...');
+        ffmpeg(tempFilePath)
+          .outputOptions([
+            '-vf', 'scale=-2:480',
+            '-c:a', 'copy',
+            '-c:v', 'libx264',
+            '-crf', '28',
+            '-preset', 'medium'
+          ])
+          .output(tempPreviewFilePath)
+          .on('progress', (progress) => {
+            console.log(`Preview Processing: ${progress.percent}% done`);
+          })
+          .on('end', async () => {
+            console.log('Preview video created successfully');
+            try {
+              // Upload preview immediately
+              await bucket.upload(tempPreviewFilePath, {
+                destination: previewDestination,
+                metadata: {
+                  contentType: 'video/mp4',
+                  metadata: { originalVideo: filePath }
+                },
+              });
+              await bucket.file(previewDestination).makePublic();
+              // Clean up preview file
+              fs.unlinkSync(tempPreviewFilePath);
+              console.log('Preview uploaded and cleaned up');
+            } catch (err) {
+              console.error('Error uploading preview:', err);
+            }
+            resolve();
+          })
+          .on('error', (err) => {
+            console.error('Error during preview transcoding:', err);
+            reject(err);
+          })
+          .run();
       }),
-      // Upload all HLS files
-      ...hlsFiles.map(file => 
-        bucket.upload(path.join(tempHlsDir, file), {
-          destination: `${hlsDestinationBase}/${file}`,
-          metadata: {
-            contentType: file.endsWith('.m3u8') ? 'application/x-mpegURL' : 'video/MP2T',
-            metadata: { originalVideo: filePath }
-          },
-        })
-      )
+      // HLS transcoding
+      new Promise((resolve, reject) => {
+        console.log('Starting HLS transcoding...');
+        ffmpeg(tempFilePath)
+          .outputOptions([
+            '-hls_time', '6',
+            '-hls_list_size', '0',
+            '-hls_segment_type', 'mpegts',
+            '-hls_segment_filename', path.join(tempHlsDir, 'segment_%03d.ts'),
+            '-c:v', 'libx264',
+            '-crf', '23',
+            '-preset', 'fast',
+            '-vf', 'scale=-2:720',
+            '-c:a', 'aac',
+            '-b:a', '128k',
+            '-master_pl_name', 'master.m3u8',
+            '-f', 'hls'
+          ])
+          .output(path.join(tempHlsDir, 'playlist.m3u8'))
+          .on('progress', (progress) => {
+            console.log(`HLS Processing: ${progress.percent}% done`);
+          })
+          .on('end', async () => {
+            console.log('HLS streams created successfully');
+            try {
+              // Upload HLS files immediately
+              const hlsFiles = fs.readdirSync(tempHlsDir);
+              console.log('Uploading HLS streams...');
+              await Promise.all([
+                ...hlsFiles.map(file => 
+                  bucket.upload(path.join(tempHlsDir, file), {
+                    destination: `${hlsDestinationBase}/${file}`,
+                    metadata: {
+                      contentType: file.endsWith('.m3u8') ? 'application/x-mpegURL' : 'video/MP2T',
+                      metadata: { originalVideo: filePath }
+                    },
+                  })
+                )
+              ]);
+
+              // Make HLS files publicly accessible
+              await Promise.all(
+                hlsFiles.map(file => 
+                  bucket.file(`${hlsDestinationBase}/${file}`).makePublic()
+                )
+              );
+
+              // Clean up HLS directory
+              fs.rmSync(tempHlsDir, { recursive: true, force: true });
+              console.log('HLS files uploaded and cleaned up');
+            } catch (err) {
+              console.error('Error uploading HLS files:', err);
+            }
+            resolve();
+          })
+          .on('error', (err) => {
+            console.error('Error during HLS transcoding:', err);
+            reject(err);
+          })
+          .run();
+      })
     ]);
 
-    // Make all files publicly accessible
-    await Promise.all([
-      bucket.file(previewDestination).makePublic(),
-      bucket.file(thumbnailDestination).makePublic(),
-      ...hlsFiles.map(file => 
-        bucket.file(`${hlsDestinationBase}/${file}`).makePublic()
-      )
-    ]);
-
-    const previewUrl = `https://storage.googleapis.com/${fileBucket}/${previewDestination}`;
-    const thumbnailUrl = `https://storage.googleapis.com/${fileBucket}/${thumbnailDestination}`;
+    const previewUrl = `https://storage.googleapis.com/${fileBucket}/previews/${userId}/${previewFileName}`;
+    const thumbnailUrl = `https://storage.googleapis.com/${fileBucket}/thumbnails/${userId}/${thumbnailFileName}`;
     const hlsUrl = `https://storage.googleapis.com/${fileBucket}/${hlsDestinationBase}/playlist.m3u8`;
     console.log('Files are publicly available at:', { previewUrl, thumbnailUrl });
     console.log('HLS URL:', hlsUrl);
@@ -256,16 +249,18 @@ exports.generatePreviewV2 = onObjectFinalized({
         // Client can still access the files via the URLs
       }
     }
-  } catch (uploadError) {
-    console.error('Error during upload:', uploadError);
-    // If upload fails, clean up the temporary files and return
+  } catch (error) {
+    console.error('Error in processing:', error);
+    // Clean up any files that might have been created before the error
     try {
-      fs.unlinkSync(tempFilePath);
-      fs.unlinkSync(tempPreviewFilePath);
-      fs.unlinkSync(tempThumbnailPath);
-      fs.rmSync(tempHlsDir, { recursive: true, force: true });
+      if (fs.existsSync(tempFilePath)) fs.unlinkSync(tempFilePath);
+      if (fs.existsSync(tempPreviewFilePath)) fs.unlinkSync(tempPreviewFilePath);
+      if (fs.existsSync(tempThumbnailPath)) fs.unlinkSync(tempThumbnailPath);
+      if (fs.existsSync(tempHlsDir)) {
+        fs.rmSync(tempHlsDir, { recursive: true, force: true });
+      }
     } catch (cleanupError) {
-      console.error('Error during cleanup after upload failure:', cleanupError);
+      console.error('Error during cleanup after failure:', cleanupError);
     }
     return null;
   }
@@ -273,10 +268,19 @@ exports.generatePreviewV2 = onObjectFinalized({
   // Clean up temporary files
   console.log('Cleaning up temporary files');
   try {
-    fs.unlinkSync(tempFilePath);
-    fs.unlinkSync(tempPreviewFilePath);
-    fs.unlinkSync(tempThumbnailPath);
-    fs.rmSync(tempHlsDir, { recursive: true, force: true });
+    // Only delete files that still exist
+    if (fs.existsSync(tempFilePath)) {
+      fs.unlinkSync(tempFilePath);
+    }
+    if (fs.existsSync(tempPreviewFilePath)) {
+      fs.unlinkSync(tempPreviewFilePath);
+    }
+    if (fs.existsSync(tempThumbnailPath)) {
+      fs.unlinkSync(tempThumbnailPath);
+    }
+    if (fs.existsSync(tempHlsDir)) {
+      fs.rmSync(tempHlsDir, { recursive: true, force: true });
+    }
   } catch (cleanupError) {
     console.error('Error during final cleanup:', cleanupError);
     // Don't throw since processing is complete

@@ -1,6 +1,6 @@
 Fixes:
 1) Cloud function: Remove trigger on blob data (matches search file structure rn)
-2) Fix thumbnail generation bug too wide: https://chatgpt.com/c/67a3781e-aa9c-8004-89b4-90c420342044
+2) Fix thumbnail generation bug too wide: https://chatgpt.com/c/67a3781e-aa9c-8004-89b4-90c420342044 (done)
 3) Fix video screen slightly misaligned on the right side (video blur?)
 4) Newly uploaded videos don't load instantly -> Fixed by eventual feed algorithm (which won't load newly uploaded videos instantly)
 
@@ -42,12 +42,15 @@ Friday 2/7
 4) Upload confirmation (done)
 
 Saturday 2/8
-1) Code audit
+1) Code audit / misc
 "It's time for a code audit! Go through the codebase (the code itself, ignore the documentation), into every nook and cranny, and provide a report on things to improve. Note down any unnecessary duplicated code, potential for refactoring, or just suggestions you think would help the codebase me more maintainable."
 
 Monday 2/10 (AI week)
 1) Daily Swipe Froupin' time group voting feature
-
+2) Notifications with voting feature
+3) Fix thumbnail generation bug too wide: https://chatgpt.com/c/67a3781e-aa9c-8004-89b4-90c420342044 (done)
+4) Upgrade to cloud functions v2
+5) 
 
 Beyond
 1) Feed algorithm
