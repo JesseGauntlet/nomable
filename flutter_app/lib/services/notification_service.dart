@@ -17,6 +17,8 @@ class NotificationService {
       sound: true,
     );
 
+    print('Notification permission status: ${settings.authorizationStatus}');
+
     // Handle incoming messages when app is in foreground
     FirebaseMessaging.onMessage.listen(_handleForegroundMessage);
 
@@ -24,12 +26,28 @@ class NotificationService {
     FirebaseMessaging.onMessageOpenedApp.listen(_handleBackgroundMessage);
 
     // Update FCM token when it changes
-    _messaging.onTokenRefresh.listen(_updateToken);
+    _messaging.onTokenRefresh.listen((token) {
+      print('FCM Token refreshed: $token');
+      _updateToken(token);
+    });
 
     // Get initial token
     String? token = await _messaging.getToken();
+
+    // If no token exists but we have permission, force a refresh
+    if (token == null &&
+        settings.authorizationStatus == AuthorizationStatus.authorized) {
+      print('No token found, forcing refresh...');
+      await _messaging.deleteToken();
+      token = await _messaging.getToken();
+    }
+
     if (token != null) {
+      print('Initial FCM Token: $token');
       await _updateToken(token);
+    } else {
+      print(
+          'Failed to get FCM token. Authorization status: ${settings.authorizationStatus}');
     }
   }
 
@@ -79,6 +97,7 @@ class NotificationService {
     final user = _auth.currentUser;
     if (user != null) {
       try {
+        print('Updating FCM token for user ${user.uid}');
         // First check if the document exists
         final docSnapshot =
             await _firestore.collection('users').doc(user.uid).get();
@@ -89,6 +108,7 @@ class NotificationService {
             'fcmToken': token,
             'updatedAt': FieldValue.serverTimestamp(),
           });
+          print('Successfully updated FCM token in Firestore');
         } else {
           // Create new document with required fields
           await _firestore.collection('users').doc(user.uid).set({
@@ -105,11 +125,14 @@ class NotificationService {
             'createdAt': FieldValue.serverTimestamp(),
             'updatedAt': FieldValue.serverTimestamp(),
           });
+          print('Successfully created new user document with FCM token');
         }
       } catch (e) {
         print('Error updating FCM token: $e');
         // Don't throw the error as this is not critical for app function
       }
+    } else {
+      print('Cannot update FCM token: No user is currently logged in');
     }
   }
 

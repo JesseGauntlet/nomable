@@ -198,6 +198,18 @@ service cloud.firestore {
         allow write: if isAuthenticated() && 
           get(/databases/$(database)/documents/groups/$(groupId)).data.creatorId == request.auth.uid;
       }
+
+      // Votes subcollection
+      match /votes/{voteId} {
+        allow read: if isAuthenticated() && 
+          get(/databases/$(database)/documents/groups/$(groupId)).data.members.hasAny([request.auth.uid]);
+        allow create: if isAuthenticated() && 
+          get(/databases/$(database)/documents/groups/$(groupId)).data.members.hasAny([request.auth.uid]) &&
+          request.resource.data.keys().hasOnly(['initiatedBy', 'timestamp', 'status']) &&
+          request.resource.data.initiatedBy == request.auth.uid &&
+          request.resource.data.status == 'pending';
+        allow update: if false; // Only cloud functions can update vote documents
+      }
     }
 
     // Notifications collection

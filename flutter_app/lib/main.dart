@@ -21,16 +21,6 @@ void main() async {
         options: DefaultFirebaseOptions.currentPlatform,
       );
     }
-
-    // Initialize notification service after Firebase is initialized
-    // and wrap in try-catch to prevent app crash
-    try {
-      final notificationService = NotificationService();
-      await notificationService.initialize();
-    } catch (e) {
-      print('Error initializing notifications: $e');
-      // Continue app initialization even if notifications fail
-    }
   } catch (e) {
     if (e.toString().contains('duplicate-app')) {
       print('Firebase already initialized');
@@ -95,6 +85,29 @@ class MainScreen extends StatefulWidget {
 
 class _MainScreenState extends State<MainScreen> {
   int _selectedIndex = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _initializeNotifications();
+  }
+
+  Future<void> _initializeNotifications() async {
+    try {
+      final notificationService = NotificationService();
+      await notificationService.initialize();
+    } catch (e) {
+      print('Error initializing notifications: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to initialize notifications: $e'),
+            duration: const Duration(seconds: 5),
+          ),
+        );
+      }
+    }
+  }
 
   static const List<Widget> _screens = [
     FeedScreen(),

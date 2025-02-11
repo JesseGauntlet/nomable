@@ -8,16 +8,16 @@ class GroupPreferencesScreen extends StatefulWidget {
   final String groupName;
 
   const GroupPreferencesScreen({
-    Key? key,
+    super.key,
     required this.groupId,
     required this.groupName,
-  }) : super(key: key);
+  });
 
   @override
-  _GroupPreferencesScreenState createState() => _GroupPreferencesScreenState();
+  GroupPreferencesScreenState createState() => GroupPreferencesScreenState();
 }
 
-class _GroupPreferencesScreenState extends State<GroupPreferencesScreen> {
+class GroupPreferencesScreenState extends State<GroupPreferencesScreen> {
   final User? currentUser = FirebaseAuth.instance.currentUser;
   final NotificationService _notificationService = NotificationService();
   Map<String, double> groupPreferences = {};
@@ -137,37 +137,107 @@ class _GroupPreferencesScreenState extends State<GroupPreferencesScreen> {
 
   // Initiate the group vote and send notifications
   Future<void> _initiateGroupVote() async {
-    if (currentUser == null) return;
+    try {
+      // Show confirmation dialog
+      final bool? confirm = await showDialog<bool>(
+        context: context,
+        builder: (BuildContext context) {
+          return AlertDialog(
+            title: const Text("Start Group Vote"),
+            content: const Text(
+                "This will reset everyone's swipe count and notify all group members to start swiping. Continue?"),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(false),
+                child: const Text('Cancel'),
+              ),
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(true),
+                child: const Text('Continue'),
+              ),
+            ],
+          );
+        },
+      );
 
-    final groupDoc = await FirebaseFirestore.instance
-        .collection('groups')
-        .doc(widget.groupId)
-        .get();
+      if (confirm != true) return;
 
-    final List<String> memberIds = List<String>.from(groupDoc['members'] ?? []);
+      // Show loading indicator
+      if (!mounted) return;
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (BuildContext context) {
+          return const Center(
+            child: CircularProgressIndicator(),
+          );
+        },
+      );
 
-    // Reset swipe counts for all members
-    for (String memberId in memberIds) {
-      await FirebaseFirestore.instance
-          .collection('users')
-          .doc(memberId)
-          .update({'swipeCount': 0});
-    }
+      // Create a new vote document
+      final voteRef = FirebaseFirestore.instance
+          .collection('groups')
+          .doc(widget.groupId)
+          .collection('votes')
+          .doc();
 
-    // Send notifications to group members
-    await _notificationService.notifyGroupMembers(widget.groupId, memberIds);
+      await voteRef.set({
+        'initiatedBy': FirebaseAuth.instance.currentUser?.uid,
+        'timestamp': FieldValue.serverTimestamp(),
+        'status': 'pending',
+      });
 
-    // Show success message
-    if (mounted) {
+      // Wait for the vote to be processed
+      bool success = false;
+      for (int i = 0; i < 10; i++) {
+        // Try for up to 5 seconds
+        await Future.delayed(const Duration(milliseconds: 500));
+
+        final voteDoc = await voteRef.get();
+        if (!voteDoc.exists) continue;
+
+        final status = voteDoc.data()?['status'] as String?;
+        if (status == 'completed') {
+          success = true;
+          break;
+        } else if (status == 'error') {
+          throw Exception(
+              voteDoc.data()?['error'] ?? 'Failed to initiate group vote');
+        }
+      }
+
+      if (!success) {
+        throw Exception('Timeout waiting for vote processing');
+      }
+
+      // Close loading dialog
+      if (!mounted) return;
+      Navigator.of(context).pop();
+
+      // Show success message
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Vote initiated! Members have been notified.'),
+          content: Text('Group vote initiated! Members have been notified.'),
+          backgroundColor: Colors.green,
+        ),
+      );
+    } catch (e) {
+      // Close loading dialog if open
+      if (!mounted) return;
+      if (Navigator.of(context).canPop()) {
+        Navigator.of(context).pop();
+      }
+
+      // Show error message
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Failed to initiate group vote: ${e.toString()}'),
+          backgroundColor: Colors.red,
         ),
       );
     }
-
-    // Refresh the member data
-    _loadMemberData();
   }
 
   @override
