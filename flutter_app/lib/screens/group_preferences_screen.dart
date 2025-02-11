@@ -250,169 +250,167 @@ class GroupPreferencesScreenState extends State<GroupPreferencesScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text('${widget.groupName} Preferences'),
-        backgroundColor: Theme.of(context).colorScheme.surface,
+        title: Text(widget.groupName),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.refresh),
+            onPressed: () {
+              setState(() {
+                isLoading = true;
+              });
+              _loadGroupPreferences();
+              _loadMemberData();
+            },
+          ),
+        ],
       ),
       body: isLoading
           ? const Center(child: CircularProgressIndicator())
-          : Padding(
+          : SingleChildScrollView(
               padding: const EdgeInsets.all(16.0),
               child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Froupin' time button
-                  ElevatedButton.icon(
-                    onPressed: _showVoteConfirmation,
-                    icon: const Icon(Icons.how_to_vote),
-                    label: const Text("Froupin' time"),
-                    style: ElevatedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 24, vertical: 12),
-                    ),
-                  ),
-                  const SizedBox(height: 24),
-
-                  // Member swipe progress
-                  Card(
-                    child: Padding(
-                      padding: const EdgeInsets.all(16.0),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Text(
-                            'Daily Swipes Progress',
-                            style: TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          const SizedBox(height: 16),
-                          ...memberData.entries.map((entry) {
-                            final swipeCount = entry.value['swipeCount'] as int;
-                            final name = entry.value['name'] as String;
-                            return Padding(
-                              padding: const EdgeInsets.only(bottom: 8.0),
-                              child: Row(
-                                children: [
-                                  Expanded(
-                                    child: Text(
-                                      name,
-                                      style: const TextStyle(
-                                        fontSize: 16,
-                                        fontWeight: FontWeight.w500,
-                                      ),
-                                    ),
-                                  ),
-                                  const SizedBox(width: 8),
-                                  Text(
-                                    '$swipeCount/10',
-                                    style: const TextStyle(
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.w500,
-                                    ),
-                                  ),
-                                  const SizedBox(width: 8),
-                                  if (swipeCount >= 10)
-                                    const Icon(
-                                      Icons.check_circle,
-                                      color: Colors.green,
-                                    ),
-                                ],
-                              ),
-                            );
-                          }).toList(),
-                        ],
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 24),
-
-                  // Existing preferences content
+                  // Daily swipes progress section
                   const Text(
-                    'Group Food Preferences',
+                    'Daily swipes progress',
                     style: TextStyle(
                       fontSize: 20,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
-                  const SizedBox(height: 8),
-                  Text(
-                    'Based on ${groupPreferences.length} food types',
-                    style: TextStyle(
-                      color: Colors.grey[600],
-                      fontSize: 14,
-                    ),
-                  ),
-                  const SizedBox(height: 24),
-                  Expanded(
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                      child: ListView.builder(
-                        itemCount: groupPreferences.length,
-                        itemBuilder: (context, index) {
-                          final entry =
-                              groupPreferences.entries.elementAt(index);
-                          final maxValue = groupPreferences.values
-                              .reduce((a, b) => a > b ? a : b);
-                          final percentage = entry.value / maxValue;
+                  const SizedBox(height: 16),
+                  // Member progress list
+                  ...memberData.entries.map((entry) {
+                    final memberId = entry.key;
+                    final memberName = entry.value['name'] as String;
+                    final swipeCount = entry.value['swipeCount'] as int;
+                    final progress =
+                        swipeCount / 10; // Assuming 10 is max swipes
 
-                          return Padding(
-                            padding: const EdgeInsets.symmetric(vertical: 8.0),
-                            child: Row(
-                              crossAxisAlignment: CrossAxisAlignment.center,
-                              children: [
-                                // Food name with fixed width
-                                SizedBox(
-                                  width: 100,
-                                  child: Text(
-                                    entry.key,
-                                    style: const TextStyle(
-                                      fontSize: 14,
-                                      fontWeight: FontWeight.w500,
-                                    ),
-                                  ),
-                                ),
-                                // Bar container with flexible width
-                                Expanded(
-                                  child: LayoutBuilder(
-                                    builder: (context, constraints) {
-                                      return Stack(
-                                        children: [
-                                          Container(
-                                            height: 24,
-                                            width: constraints.maxWidth *
-                                                percentage,
-                                            decoration: BoxDecoration(
-                                              color: Theme.of(context)
-                                                  .colorScheme
-                                                  .primary,
-                                              borderRadius:
-                                                  BorderRadius.circular(4),
-                                            ),
-                                          ),
-                                        ],
-                                      );
-                                    },
-                                  ),
-                                ),
-                                // Value with fixed padding
-                                Container(
-                                  width: 50,
-                                  padding: const EdgeInsets.only(left: 8.0),
-                                  child: Text(
-                                    entry.value.toStringAsFixed(1),
-                                    style: const TextStyle(
-                                      fontSize: 14,
-                                      fontWeight: FontWeight.w500,
-                                    ),
-                                  ),
-                                ),
-                              ],
+                    return Padding(
+                      padding: const EdgeInsets.only(bottom: 8.0),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(memberName),
+                          const SizedBox(height: 4),
+                          LinearProgressIndicator(
+                            value: progress,
+                            backgroundColor: Colors.grey[200],
+                            valueColor: AlwaysStoppedAnimation<Color>(
+                              progress >= 1.0 ? Colors.green : Colors.blue,
                             ),
-                          );
-                        },
+                          ),
+                          Text('$swipeCount/10 swipes'),
+                        ],
+                      ),
+                    );
+                  }).toList(),
+                  const SizedBox(height: 16),
+                  Center(
+                    child: ElevatedButton.icon(
+                      onPressed: () {
+                        Navigator.pushNamedAndRemoveUntil(
+                          context,
+                          '/home',
+                          (route) => false,
+                        );
+                      },
+                      icon: const Icon(Icons.swipe),
+                      label: const Text('Begin Swiping'),
+                      style: ElevatedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 24,
+                          vertical: 12,
+                        ),
                       ),
                     ),
                   ),
+                  const SizedBox(height: 24),
+                  // Group preferences section
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Text(
+                        'Group preferences',
+                        style: TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      TextButton.icon(
+                        onPressed: _showVoteConfirmation,
+                        icon: const Icon(Icons.refresh),
+                        label: const Text('Start Vote'),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 24),
+                  // Group preferences list
+                  ...groupPreferences.entries.map((entry) {
+                    final maxValue =
+                        groupPreferences.values.reduce((a, b) => a > b ? a : b);
+                    final percentage = entry.value / maxValue;
+
+                    return Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 8.0),
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: [
+                          // Food name with fixed width
+                          SizedBox(
+                            width: 100,
+                            child: Text(
+                              entry.key,
+                              style: const TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ),
+                          // Bar container with flexible width
+                          Expanded(
+                            child: LayoutBuilder(
+                              builder: (context, constraints) {
+                                return Container(
+                                  height: 24,
+                                  child: Stack(
+                                    children: [
+                                      Container(
+                                        width:
+                                            constraints.maxWidth * percentage,
+                                        height: 24,
+                                        decoration: BoxDecoration(
+                                          color: Theme.of(context)
+                                              .colorScheme
+                                              .primary,
+                                          borderRadius:
+                                              BorderRadius.circular(4),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                );
+                              },
+                            ),
+                          ),
+                          // Value with fixed padding
+                          Container(
+                            width: 50,
+                            padding: const EdgeInsets.only(left: 8.0),
+                            child: Text(
+                              entry.value.toStringAsFixed(1),
+                              style: const TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+                  }).toList(),
                 ],
               ),
             ),

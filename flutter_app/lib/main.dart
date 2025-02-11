@@ -9,6 +9,7 @@ import 'screens/profile_screen.dart';
 import 'screens/friends_screen.dart';
 import 'screens/video_source_screen.dart';
 import 'screens/explore_screen.dart';
+import 'screens/group_preferences_screen.dart';
 import 'services/auth_service.dart';
 import 'services/notification_service.dart';
 
@@ -39,6 +40,7 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       scaffoldMessengerKey: NotificationService.messengerKey,
+      navigatorKey: NotificationService.navigatorKey,
       title: 'froupr',
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepOrange),
@@ -50,6 +52,14 @@ class MyApp extends StatelessWidget {
         '/login': (context) => const LoginScreen(),
         '/register': (context) => const RegisterScreen(),
         '/home': (context) => const MainScreen(),
+        '/group_preferences': (context) {
+          final args = ModalRoute.of(context)!.settings.arguments
+              as Map<String, dynamic>;
+          return GroupPreferencesScreen(
+            groupId: args['groupId']!,
+            groupName: args['groupName']!,
+          );
+        },
       },
     );
   }

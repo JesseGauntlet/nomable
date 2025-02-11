@@ -347,7 +347,7 @@ exports.initiateGroupVoteV2 = onDocumentCreated('groups/{groupId}/votes/{voteId}
       tokens: tokens,
       notification: {
         title: "It's Froupin' time!",
-        body: 'Time to start swiping! Complete your daily swipes.',
+        body: `The ${groupDoc.data().name} group started a vote, swipe now!`,
       },
       android: {
         notification: {
@@ -362,6 +362,10 @@ exports.initiateGroupVoteV2 = onDocumentCreated('groups/{groupId}/votes/{voteId}
             badge: 1,
           },
         },
+      },
+      data: {
+        type: 'group_vote',
+        groupId: groupId,
       },
     };
 

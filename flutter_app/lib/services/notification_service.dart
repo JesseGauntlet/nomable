@@ -10,6 +10,8 @@ class NotificationService {
   final FirebaseAuth _auth = FirebaseAuth.instance;
   static final GlobalKey<ScaffoldMessengerState> messengerKey =
       GlobalKey<ScaffoldMessengerState>();
+  static final GlobalKey<NavigatorState> navigatorKey =
+      GlobalKey<NavigatorState>();
 
   // Initialize notification settings and request permissions
   Future<void> initialize() async {
@@ -21,6 +23,7 @@ class NotificationService {
       alert: true,
       badge: true,
       sound: true,
+      provisional: false,
     );
 
     print('Notification permission status: ${settings.authorizationStatus}');
@@ -100,12 +103,34 @@ class NotificationService {
   }
 
   // Handle notification tap
-  void _handleNotificationTap(Map<String, dynamic> data) {
+  Future<void> _handleNotificationTap(Map<String, dynamic> data) async {
     // Handle different types of notifications
     if (data['type'] == 'group_vote' && data['groupId'] != null) {
-      // Navigate to group preferences screen
-      // Note: This requires navigation context, so you might want to use
-      // a navigation service or pass the context from the UI layer
+      print('Navigating to group ${data['groupId']} for voting');
+      try {
+        // Fetch group name from Firestore
+        final groupDoc =
+            await _firestore.collection('groups').doc(data['groupId']).get();
+        final groupName =
+            groupDoc.data()?['name'] as String? ?? 'Unknown Group';
+
+        // Navigate to group preferences screen
+        navigatorKey.currentState?.pushNamed(
+          '/group_preferences',
+          arguments: {'groupId': data['groupId'], 'groupName': groupName},
+        );
+      } catch (e) {
+        print('Error navigating to group: $e');
+        final messenger = messengerKey.currentState;
+        if (messenger != null) {
+          messenger.showSnackBar(
+            SnackBar(
+              content: Text('Error opening group: $e'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      }
     }
   }
 
@@ -150,36 +175,6 @@ class NotificationService {
       }
     } else {
       print('Cannot update FCM token: No user is currently logged in');
-    }
-  }
-
-  // Send notification to group members about voting
-  Future<void> notifyGroupMembers(
-      String groupId, List<String> memberIds) async {
-    try {
-      // Get FCM tokens for all members
-      final membersSnapshot = await _firestore
-          .collection('users')
-          .where(FieldPath.documentId, whereIn: memberIds)
-          .get();
-
-      final List<String> tokens = membersSnapshot.docs
-          .map((doc) => doc.data()['fcmToken'] as String?)
-          .where((token) => token != null)
-          .cast<String>()
-          .toList();
-
-      // Send notification through Firebase Cloud Functions
-      await _firestore.collection('notifications').add({
-        'tokens': tokens,
-        'title': "It's Froupin' time!",
-        'body': 'Time to start swiping! Complete your 10 daily swipes.',
-        'type': 'group_vote',
-        'groupId': groupId,
-        'timestamp': FieldValue.serverTimestamp(),
-      });
-    } catch (e) {
-      print('Error sending notifications: $e');
     }
   }
 }
