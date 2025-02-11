@@ -50,7 +50,11 @@ Monday 2/10 (AI week)
 2) Notifications with voting feature
 3) Fix thumbnail generation bug too wide: https://chatgpt.com/c/67a3781e-aa9c-8004-89b4-90c420342044 (done)
 4) Upgrade to cloud functions v2
-5) 
+5) Update cloud function to be parallelized
+6) Update cloud function to use more memory for video processing (GiB not GB)
+
+Tuesday 2/11 (AI start)
+1) AI: Frame analysis
 
 Beyond
 1) Feed algorithm
