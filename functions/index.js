@@ -74,7 +74,7 @@ exports.generatePreviewV2 = onObjectFinalized({
           timestamps: [1], // Take screenshot at 1 second to avoid black frames
           filename: thumbnailFileName,
           folder: os.tmpdir(),
-          size: '480x270', // 16:9 aspect ratio thumbnail
+          size: '480x?', // Fixed width, auto height to preserve aspect ratio
           quality: 90 // High quality JPEG
         })
         .on('end', () => {

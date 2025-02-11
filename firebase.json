@@ -10,6 +10,11 @@
     "source": "functions",
     "predeploy": [
       "npm --prefix \"$RESOURCE_DIR\" install"
-    ]
+    ],
+    "generatePreviewV2": {
+      "memory": "1GB",
+      "cpu": 1,
+      "gen2": true
+    }
   }
 }
