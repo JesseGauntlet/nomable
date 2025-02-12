@@ -20,6 +20,7 @@ class _UploadScreenState extends State<UploadScreen> {
   String? _selectedVideoPath;
   bool _isUploading = false;
   bool _uploadSuccess = false;
+  bool _useAI = false;
   final FirebaseStorage _storage = FirebaseStorage.instance;
   final _userService = UserService();
   final List<String> _foodTags = [];
@@ -145,6 +146,7 @@ class _UploadScreenState extends State<UploadScreen> {
         customMetadata: {
           'userId': user.uid,
           'postId': postRef.id, // Include the post ID in metadata
+          'useAI': _useAI.toString(),
         },
       );
 
@@ -273,11 +275,30 @@ class _UploadScreenState extends State<UploadScreen> {
                 ],
               ],
               const SizedBox(height: 16),
+              SwitchListTile(
+                title: const Text('Tag with AI'),
+                subtitle: const Text('Let AI generate tags and description'),
+                value: _useAI,
+                onChanged: (bool value) {
+                  setState(() {
+                    _useAI = value;
+                    // Clear manual inputs if AI is enabled
+                    if (value) {
+                      _descriptionController.clear();
+                      _tagController.clear();
+                      _foodTags.clear();
+                    }
+                  });
+                },
+              ),
+              const SizedBox(height: 16),
               TextField(
+                enabled: !_useAI,
                 controller: _descriptionController,
                 decoration: const InputDecoration(
                   labelText: 'Description',
                   border: OutlineInputBorder(),
+                  hintText: 'AI will generate description if enabled',
                 ),
                 maxLines: 3,
               ),
@@ -286,10 +307,11 @@ class _UploadScreenState extends State<UploadScreen> {
                 children: [
                   Expanded(
                     child: TextField(
+                      enabled: !_useAI,
                       controller: _tagController,
                       decoration: const InputDecoration(
                         labelText: 'Add Food Tags',
-                        hintText: 'Enter a food tag',
+                        hintText: 'AI will generate tags if enabled',
                         border: OutlineInputBorder(),
                       ),
                       onSubmitted: (_) => _addTag(),
@@ -297,7 +319,7 @@ class _UploadScreenState extends State<UploadScreen> {
                   ),
                   const SizedBox(width: 8),
                   IconButton(
-                    onPressed: _addTag,
+                    onPressed: _useAI ? null : _addTag,
                     icon: const Icon(Icons.add),
                     tooltip: 'Add Tag',
                   ),

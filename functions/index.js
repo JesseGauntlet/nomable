@@ -4,6 +4,8 @@ const admin = require('firebase-admin');
 const os = require('os');
 const path = require('path');
 const fs = require('fs');
+const { SecretManagerServiceClient } = require('@google-cloud/secret-manager');
+const { GoogleGenerativeAI } = require('@google/generative-ai');
 
 const ffmpeg = require('fluent-ffmpeg');
 const ffmpegPath = require('ffmpeg-static');
@@ -11,6 +13,70 @@ const ffmpegPath = require('ffmpeg-static');
 ffmpeg.setFfmpegPath(ffmpegPath);
 
 admin.initializeApp();
+const myProject = process.env.GOOGLE_CLOUD_PROJECT || 'foodtalk-f468d';
+// Initialize clients
+const secretManager = new SecretManagerServiceClient({
+  projectId: myProject
+});
+const db = admin.firestore();
+
+async function getGeminiKey() {
+  const [version] = await secretManager.accessSecretVersion({
+    name: `projects/${myProject}/secrets/Gemini/versions/latest`
+  });
+  return version.payload.data.toString();
+}
+
+async function analyzeWithGemini(videoUrl) {
+  const apiKey = await getGeminiKey();
+  const genAI = new GoogleGenerativeAI(apiKey);
+  const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
+
+  const prompt = `
+    Video analysis, returning primary food tags (e.g. pizza, and or italian,
+    but not dough or tomato sauce), detailed description of the food in the
+    video, quantified ingredients, detailed step by step recipe with
+    quantified ingredient usage, and content moderation
+    (if topic is_food_related, or topic is_nsfw, also add a "reason"
+    field that states why content moderation failed).
+
+    Format your response as JSON with these fields:
+    {
+      "video_id": "unique_video_identifier",
+      "topic": "food_related",
+      "primary_food_tags": ["pizza", "italian"],
+      "detailed_food_description": "A pepperoni pizza with a thick crust...",
+      "quantified_ingredients": [
+        {"ingredient": "pizza dough", "quantity": "500g"}
+      ],
+      "detailed_step_by_step_recipe": [
+        {"step": 1, "instruction": "Preheat oven to 220°C (425°F)."}
+      ],
+      "content_moderation": {
+        "is_food_related": true,
+        "is_nsfw": false,
+        "reason": null
+      }
+    }
+  `;
+
+  const response = await model.generateContent([
+    {
+      fileData: {
+        mimeType: 'video/mp4',
+        fileUri: videoUrl
+      }
+    },
+    { text: prompt }
+  ]);
+
+  try {
+    return JSON.parse(response.text);
+  } catch (error) {
+    console.error('Failed to parse Gemini response:', error);
+    return { tags: [], description: 'Failed to analyze video' };
+  }
+}
 
 // Cloud Function triggered on finalization (upload) of a storage object
 exports.generatePreviewV2 = onObjectFinalized({
@@ -415,6 +481,67 @@ exports.initiateGroupVoteV2 = onDocumentCreated('groups/{groupId}/votes/{voteId}
       error: error.message,
       completedAt: admin.firestore.FieldValue.serverTimestamp(),
     });
+    return null;
+  }
+});
+
+// Cloud Function to process videos with AI
+exports.processVideoAI = onObjectFinalized({
+  timeoutSeconds: 300,
+  memory: '2GiB',
+  location: 'us-central1',
+  eventFilters: {
+    path: {
+      value: '/videos/',
+      matchType: 'prefix'
+    }
+  }
+}, async (event) => {
+  const file = event.data;
+
+  // Skip if not video
+  if (!file.contentType?.startsWith('video/')) {
+    console.log('Not a video file, skipping');
+    return null;
+  }
+
+  // Check metadata
+  const metadata = file.metadata || {};
+  if (metadata.useAI !== 'true' || !metadata.postId) {
+    console.log('Skipping AI processing, useAI =', metadata.useAI, 
+                'postId =', metadata.postId);
+    return null;
+  }
+
+  try {
+    // Generate GCS URL
+    const videoUrl = `gs://${file.bucket}/${file.name}`;
+    
+    // Process with Gemini
+    const aiResults = await analyzeWithGemini(videoUrl);
+    
+    // Update Firestore
+    await db.collection('posts').doc(metadata.postId).update({
+      foodTags: aiResults.primary_food_tags || [],
+      description: aiResults.detailed_food_description || '',
+      recipe: aiResults.detailed_step_by_step_recipe || [],
+      ingredients: aiResults.quantified_ingredients || [],
+      ai_processed: true,
+      updatedAt: admin.firestore.FieldValue.serverTimestamp()
+    });
+
+    console.log(`Successfully processed video ${metadata.postId} with AI`);
+    return null;
+
+  } catch (error) {
+    console.error('Error:', error);
+    if (metadata.postId) {
+      await db.collection('posts').doc(metadata.postId).update({
+        ai_processed: false,
+        ai_error: error.message,
+        updatedAt: admin.firestore.FieldValue.serverTimestamp()
+      });
+    }
     return null;
   }
 }); 

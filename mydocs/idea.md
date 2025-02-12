@@ -51,7 +51,8 @@ User stories (6):
 2) See everyone's profiles, what they are currently craving (number of hearts near their profile), what the group craves (number of hearts)
 3) If a group member does not have updated cravings, the app will prompt them to update their cravings by swiping
 3) Large image of the top food item the group is craving displayed in the center of the screen
-4) Everyone gets 1 veto, which will display the next food
+4) Initiate timed voting game with notifications
+*) (Everyone gets 1 veto, which will display the next food)
 
 - I want to scroll through my feed and see a variety of food items
 1) See a list of food items that match my preferences
@@ -76,6 +77,29 @@ User stories (6):
 - I want ratings and reviews for restaurants
 1) See a list of friend ratings for a restaurant
 2) X approve, X disapprove (4+ star vs 3- star?)
+
+- I want to see a custom pentagon stat page for my 5 favorite tags
+1) See pengaton stats on each profile
+2) Modify top 5 tags to display
+3) Compare pentagon stats with friends
+
+AI Stories:
+- I want AI to automatically analyze my videos
+1) Take frames, send to AI to analyze
+2) AI generates tags, description, and recipe
+
+- I want AI to automatically modify my feed to show less of things that may fall under my food restrictions
+
+- I want AI to recommend me restaurants based on my preferences
+
+- I want to be able to swipe right and left on videos
+0) Record in Interactactions document
+1) Swipe right: Generate restaurant recommendations based on AI description / tags / user location
+2) Swipe left: Generate recipe recommendations based on AI description / tags
+
+- I want AI to automatically do content moderation
+1) Report posts that are not food
+2) Report posts that are not safe for work
 
 Stretch stories:
 

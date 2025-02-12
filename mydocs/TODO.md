@@ -23,12 +23,18 @@ Features
 2) Daily resets of cravings / manual test reset button
 3) fix the like/heart button in the feed to implement tracking in users subcollection
 4) Add an option to selectively "like" certain tags if a video has multiple tags. (Start with all tags selected, tap on tag to deselect).
+5) Left / Right swipes: Restaurant / Recipe
 
 Security
 1) Appcheck
 W/StorageUtil(28224): Error getting App Check token; using placeholder token instead. Error: com.google.firebase.FirebaseException: No AppCheckProvider installed.
 2) Serious auth (phone number verification)
 3) Upload file size limits
+
+AI
+- I want AI to automatically analyze my videos
+1) Take frames, send to AI to analyze
+2) AI generates tags, description, and recipe
 
 Thursday 2/6
 1) Video optimizations: Client-side prefetching (done)
@@ -54,7 +60,7 @@ Monday 2/10 (AI week)
 6) Update cloud function to use more memory for video processing (GiB not GB)
 
 Tuesday 2/11 (AI start)
-1) AI: Frame analysis
+1) AI: Gemini 2.0 video / image frame analysis
 
 Beyond
 1) Feed algorithm

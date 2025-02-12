@@ -1,0 +1,16 @@
+steps:
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    args:
+      - gcloud
+      - functions
+      - deploy
+      - process_video
+      - --gen2
+      - --runtime=python311
+      - --region=us-central1
+      - --source=.
+      - --entry-point=process_video
+      - --trigger-event=google.cloud.storage.object.v1.finalized
+      - --trigger-resource=${PROJECT_ID}.appspot.com
+      - --memory=2048MB
+      - --timeout=300s 
