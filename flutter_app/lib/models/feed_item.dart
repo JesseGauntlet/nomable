@@ -14,6 +14,8 @@ class FeedItem {
   final int heartCount;
   final int bookmarkCount;
   final DateTime? createdAt;
+  final List<dynamic>? recipe;
+  final List<dynamic>? ingredients;
 
   FeedItem({
     required this.id,
@@ -29,6 +31,8 @@ class FeedItem {
     this.heartCount = 0,
     this.bookmarkCount = 0,
     this.createdAt,
+    this.recipe,
+    this.ingredients,
   });
 
   factory FeedItem.fromFirestore(DocumentSnapshot doc) {
@@ -47,6 +51,8 @@ class FeedItem {
       heartCount: data['heartCount'] as int? ?? 0,
       bookmarkCount: data['bookmarkCount'] as int? ?? 0,
       createdAt: (data['createdAt'] as Timestamp?)?.toDate(),
+      recipe: data['recipe'] ?? [],
+      ingredients: data['ingredients'] ?? [],
     );
   }
 

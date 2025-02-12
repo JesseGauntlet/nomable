@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import './recipe_screen.dart';
 import '../models/feed_item.dart';
 import '../widgets/video_item.dart';
 import '../widgets/swipe_progress.dart';
@@ -209,47 +210,93 @@ class _FeedScreenState extends State<FeedScreen> {
 
     return Stack(
       children: [
-        PageView.builder(
-          controller: _pageController,
-          scrollDirection: Axis.vertical,
-          onPageChanged: (index) async {
-            // Load more items if needed
-            if (index >= _feedItems.length - 2) {
-              _loadFeed();
-            }
-
-            // Increment swipe count
-            try {
-              final newCount = await _userService.incrementSwipeCount();
-              setState(() {
-                _currentSwipes = newCount;
-              });
-
-              // Show completion message when reaching limit for the first time
-              if (newCount == UserService.maxDailySwipes && mounted) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text(
-                        'Daily swipes complete! Your preferences have been updated.'),
-                    duration: Duration(seconds: 3),
-                  ),
+        GestureDetector(
+          onPanEnd: (details) {
+            // Check if swipe is more horizontal or vertical
+            if (details.velocity.pixelsPerSecond.dx.abs() >
+                details.velocity.pixelsPerSecond.dy.abs()) {
+              // Horizontal swipe
+              if (details.velocity.pixelsPerSecond.dx > 0) {
+                // Changed to right swipe
+                // Swipe left - show recipe if available
+                final currentPost = _feedItems[_pageController.page!.round()];
+                if (currentPost.recipe != null &&
+                    (currentPost.recipe as List).isNotEmpty) {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => RecipeScreen(post: currentPost),
+                    ),
+                  );
+                } else {
+                  // Show feedback that no recipe is available
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('No recipe available for this post'),
+                      duration: Duration(seconds: 1),
+                    ),
+                  );
+                }
+              }
+            } else {
+              // Vertical swipe
+              if (details.velocity.pixelsPerSecond.dy > 0) {
+                // Swipe down - previous post
+                _pageController.previousPage(
+                  duration: Duration(milliseconds: 300),
+                  curve: Curves.easeInOut,
+                );
+              } else if (details.velocity.pixelsPerSecond.dy < 0) {
+                // Swipe up - next post
+                _pageController.nextPage(
+                  duration: Duration(milliseconds: 300),
+                  curve: Curves.easeInOut,
                 );
               }
-            } catch (e) {
-              print('Error incrementing swipe count: $e');
             }
           },
-          itemCount: _feedItems.length,
-          itemBuilder: (context, index) {
-            final currentItem = _feedItems[index];
-            final nextItem =
-                index < _feedItems.length - 1 ? _feedItems[index + 1] : null;
+          child: PageView.builder(
+            controller: _pageController,
+            scrollDirection: Axis.vertical,
+            onPageChanged: (index) async {
+              // Load more items if needed
+              if (index >= _feedItems.length - 2) {
+                _loadFeed();
+              }
 
-            return VideoItem(
-              item: currentItem,
-              nextItem: nextItem,
-            );
-          },
+              // Increment swipe count
+              try {
+                final newCount = await _userService.incrementSwipeCount();
+                setState(() {
+                  _currentSwipes = newCount;
+                });
+
+                // Show completion message when reaching limit for the first time
+                if (newCount == UserService.maxDailySwipes && mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text(
+                          'Daily swipes complete! Your preferences have been updated.'),
+                      duration: Duration(seconds: 3),
+                    ),
+                  );
+                }
+              } catch (e) {
+                print('Error incrementing swipe count: $e');
+              }
+            },
+            itemCount: _feedItems.length,
+            itemBuilder: (context, index) {
+              final currentItem = _feedItems[index];
+              final nextItem =
+                  index < _feedItems.length - 1 ? _feedItems[index + 1] : null;
+
+              return VideoItem(
+                item: currentItem,
+                nextItem: nextItem,
+              );
+            },
+          ),
         ),
         // Swipe progress indicator (only show until goal is reached)
         if (_currentSwipes < UserService.maxDailySwipes)
