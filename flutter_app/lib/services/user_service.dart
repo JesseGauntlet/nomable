@@ -425,4 +425,10 @@ class UserService {
       rethrow;
     }
   }
+
+  Future<Map<String, int>> getUserPreferences(String userId) async {
+    final doc =
+        await FirebaseFirestore.instance.collection('users').doc(userId).get();
+    return Map<String, int>.from(doc.data()?['foodPreferences'] ?? {});
+  }
 }

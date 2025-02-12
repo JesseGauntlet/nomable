@@ -298,7 +298,10 @@ class _ProfileScreenState extends State<ProfileScreen>
                         children: [
                           ProfileCravingsTab(userId: widget.userId),
                           PreferencesRadarChart(
-                              preferences: _user!.foodPreferences),
+                            preferences: _user!.foodPreferences,
+                            userId: widget.userId,
+                            userName: _user!.name,
+                          ),
                           ProfileVideosTab(
                             videos: _userVideos,
                             onVideosDeleted:
