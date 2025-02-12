@@ -9,6 +9,8 @@ import '../widgets/profile/swipe_progress_avatar.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'dart:io';
+import '../widgets/trends_chart.dart';
+import '../widgets/radar_chart_preferences.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -281,9 +283,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                         Tab(
                             icon: Icon(Icons.fastfood, size: 20),
                             text: 'Cravings'),
-                        Tab(
-                            icon: Icon(Icons.bar_chart, size: 20),
-                            text: 'Trends'),
+                        Tab(icon: Icon(Icons.radar), text: 'Preferences'),
                         Tab(
                             icon: Icon(Icons.grid_view, size: 20),
                             text: 'Videos'),
@@ -295,7 +295,8 @@ class _ProfileScreenState extends State<ProfileScreen>
                         controller: _tabController,
                         children: [
                           const ProfileCravingsTab(),
-                          const ProfileTrendsTab(),
+                          PreferencesRadarChart(
+                              preferences: _user!.foodPreferences),
                           ProfileVideosTab(
                             videos: _userVideos,
                             onVideosDeleted: _updateVideos,

@@ -243,13 +243,13 @@ class _FeedScreenState extends State<FeedScreen> {
               if (details.velocity.pixelsPerSecond.dy > 0) {
                 // Swipe down - previous post
                 _pageController.previousPage(
-                  duration: Duration(milliseconds: 300),
+                  duration: const Duration(milliseconds: 300),
                   curve: Curves.easeInOut,
                 );
               } else if (details.velocity.pixelsPerSecond.dy < 0) {
                 // Swipe up - next post
                 _pageController.nextPage(
-                  duration: Duration(milliseconds: 300),
+                  duration: const Duration(milliseconds: 300),
                   curve: Curves.easeInOut,
                 );
               }
