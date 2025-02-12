@@ -78,6 +78,9 @@ class _VideoItemState extends State<VideoItem> {
 
       // Update the UI to show the heart count increased
       if (mounted) {
+        setState(() {
+          widget.item.heartCount++; // Increment local heart count
+        });
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Added to your food preferences!')),
         );

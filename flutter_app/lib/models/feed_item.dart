@@ -11,7 +11,7 @@ class FeedItem {
   final List<String> foodTags;
   final String description;
   final int swipeCounts;
-  final int heartCount;
+  int heartCount;
   final int bookmarkCount;
   final DateTime? createdAt;
   final List<dynamic>? recipe;

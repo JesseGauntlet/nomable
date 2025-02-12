@@ -85,8 +85,7 @@ service cloud.firestore {
           request.resource.data.diff(resource.data).affectedKeys().hasOnly(['swipeCount', 'updatedAt']) &&
           request.resource.data.swipeCount is number &&
           (
-            // Allow incrementing by 1 up to 10
-            (request.resource.data.swipeCount == resource.data.swipeCount + 1 && request.resource.data.swipeCount <= 10) ||
+            (request.resource.data.swipeCount == resource.data.swipeCount + 1 ||
             // Allow resetting to 0
             request.resource.data.swipeCount == 0
           )
