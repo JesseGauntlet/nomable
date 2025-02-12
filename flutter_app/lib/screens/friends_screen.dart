@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'groups_screen.dart';
+import 'profile_screen.dart';
 
 // FriendsScreen widget implements the friends list, pending friend requests,
 // and a search functionality to add new friends.
@@ -161,7 +162,17 @@ class FriendsScreenState extends State<FriendsScreen>
                     : null,
               ),
               title: Text(friendData['friendName'] ?? 'No Name'),
-              // More actions can be added here if needed
+              // Make the item tappable: navigate to the friend's profile screen.
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => ProfileScreen(
+                      userId: friendData['friendId'],
+                    ),
+                  ),
+                );
+              },
             );
           },
         );

@@ -10,6 +10,7 @@ import 'screens/friends_screen.dart';
 import 'screens/video_source_screen.dart';
 import 'screens/explore_screen.dart';
 import 'screens/group_preferences_screen.dart';
+import 'screens/upload_screen.dart';
 import 'services/auth_service.dart';
 import 'services/notification_service.dart';
 
@@ -120,12 +121,12 @@ class _MainScreenState extends State<MainScreen> {
     }
   }
 
-  static const List<Widget> _screens = [
-    FeedScreen(),
-    ExploreScreen(),
-    VideoSourceScreen(),
-    ProfileScreen(),
-    FriendsScreen(),
+  late final List<Widget> _screens = [
+    const FeedScreen(),
+    const ExploreScreen(),
+    const VideoSourceScreen(),
+    ProfileScreen(userId: FirebaseAuth.instance.currentUser?.uid ?? ''),
+    const FriendsScreen(),
   ];
 
   @override

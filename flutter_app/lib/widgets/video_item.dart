@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import '../models/feed_item.dart';
 import '../services/user_cache_service.dart';
 import '../services/user_service.dart';
-import '../screens/user_profile_screen.dart';
+import '../screens/profile_screen.dart';
 import 'video_action_buttons.dart';
 import 'video_description.dart';
 import 'feed_video_player.dart';
@@ -137,9 +137,8 @@ class _VideoItemState extends State<VideoItem> {
                     Navigator.push(
                       context,
                       MaterialPageRoute(
-                        builder: (context) => UserProfileScreen(
+                        builder: (context) => ProfileScreen(
                           userId: widget.item.userId,
-                          initialUsername: _username,
                         ),
                       ),
                     );

@@ -3,17 +3,18 @@ import '../models/user_model.dart';
 import '../services/user_service.dart';
 import '../services/auth_service.dart';
 import '../widgets/profile/profile_cravings_tab.dart';
-import '../widgets/profile/profile_trends_tab.dart';
 import '../widgets/profile/profile_videos_tab.dart';
 import '../widgets/profile/swipe_progress_avatar.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'dart:io';
-import '../widgets/trends_chart.dart';
 import '../widgets/radar_chart_preferences.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 class ProfileScreen extends StatefulWidget {
-  const ProfileScreen({super.key});
+  final String userId;
+
+  const ProfileScreen({super.key, required this.userId});
 
   @override
   State<ProfileScreen> createState() => _ProfileScreenState();
@@ -26,6 +27,7 @@ class _ProfileScreenState extends State<ProfileScreen>
   List<Map<String, dynamic>> _userVideos = [];
   bool _isLoading = true;
   late TabController _tabController;
+  bool _isCurrentUser = false;
 
   @override
   void initState() {
@@ -41,16 +43,15 @@ class _ProfileScreenState extends State<ProfileScreen>
   }
 
   Future<void> _loadUserData() async {
-    // Check if this is the initial load (when _user is null)
-    bool isInitialLoad = _user == null;
-    if (isInitialLoad) {
-      setState(() {
-        _isLoading = true;
-      });
-    }
+    setState(() {
+      _isLoading = true;
+    });
 
     try {
-      final user = await _userService.getCurrentUser();
+      final user = await _userService.getUserById(widget.userId);
+      final currentUserId = FirebaseAuth.instance.currentUser?.uid;
+      _isCurrentUser = currentUserId == widget.userId;
+
       if (user != null) {
         final videos = await _userService.getUserVideos(user.id);
         if (mounted) {
@@ -226,22 +227,23 @@ class _ProfileScreenState extends State<ProfileScreen>
                                 ),
                           ),
                         ),
-                        // Edit button positioned to the right
-                        Positioned(
-                          right: 0,
-                          child: TextButton.icon(
-                            onPressed: _editProfile,
-                            icon: const Icon(Icons.edit, size: 14),
-                            label: const Text('Edit'),
-                            style: TextButton.styleFrom(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 10,
-                                vertical: 5,
+                        if (_isCurrentUser)
+                          // Edit button positioned to the right
+                          Positioned(
+                            right: 0,
+                            child: TextButton.icon(
+                              onPressed: _editProfile,
+                              icon: const Icon(Icons.edit, size: 14),
+                              label: const Text('Edit'),
+                              style: TextButton.styleFrom(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 10,
+                                  vertical: 5,
+                                ),
+                                textStyle: const TextStyle(fontSize: 11),
                               ),
-                              textStyle: const TextStyle(fontSize: 11),
                             ),
                           ),
-                        ),
                       ],
                     ),
                     if (_user?.bio != null) ...[
@@ -294,13 +296,14 @@ class _ProfileScreenState extends State<ProfileScreen>
                       child: TabBarView(
                         controller: _tabController,
                         children: [
-                          const ProfileCravingsTab(),
+                          ProfileCravingsTab(userId: widget.userId),
                           PreferencesRadarChart(
                               preferences: _user!.foodPreferences),
                           ProfileVideosTab(
                             videos: _userVideos,
-                            onVideosDeleted: _updateVideos,
-                            isOwner: true,
+                            onVideosDeleted:
+                                _isCurrentUser ? _updateVideos : null,
+                            isOwner: _isCurrentUser,
                           ),
                         ],
                       ),
@@ -310,21 +313,22 @@ class _ProfileScreenState extends State<ProfileScreen>
               ),
             ],
           ),
-          // Logout button
-          Positioned(
-            top: topPadding + 8,
-            right: 8,
-            child: IconButton(
-              icon: const Icon(Icons.logout),
-              onPressed: () async {
-                final authService = AuthService();
-                await authService.signOut();
-                if (mounted) {
-                  Navigator.of(context).pushReplacementNamed('/login');
-                }
-              },
+          // Logout button (only for current user)
+          if (_isCurrentUser)
+            Positioned(
+              top: topPadding + 8,
+              right: 8,
+              child: IconButton(
+                icon: const Icon(Icons.logout),
+                onPressed: () async {
+                  final authService = AuthService();
+                  await authService.signOut();
+                  if (mounted) {
+                    Navigator.of(context).pushReplacementNamed('/login');
+                  }
+                },
+              ),
             ),
-          ),
         ],
       ),
     );
