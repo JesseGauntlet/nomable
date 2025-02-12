@@ -79,21 +79,32 @@ async function analyzeWithGemini(videoUrl) {
       Video analysis, returning primary food tags (e.g. pizza, and or italian,
           but not dough or tomato sauce), detailed description of the food in the
           video, quantified ingredients, detailed step by step recipe with
-          quantified ingredient usage, and content moderation
-          (if topic is_food_related, or topic is_nsfw, also add a "reason"
-          field that states why content moderation failed).
+          quantified ingredient usage on how to make the food from scratch,
+          and content moderation (if topic is_food_related, or topic is_nsfw,
+          also add a "reason" field that states why content moderation failed).
 
           Format your response as JSON with these fields:
+          Example:
           {
             "video_id": "unique_video_identifier",
             "topic": "food_related",
             "primary_food_tags": ["pizza", "italian"],
             "detailed_food_description": "A pepperoni pizza with a thick crust...",
             "quantified_ingredients": [
-              {"ingredient": "pizza dough", "quantity": "500g"}
+              {"ingredient": "pizza dough", "quantity": "500g"},
+              {"ingredient": "tomato sauce", "quantity": "200g"},
+              {"ingredient": "mozzarella cheese", "quantity": "200g"},
+              {"ingredient": "pepperoni", "quantity": "100g"}
             ],
             "detailed_step_by_step_recipe": [
-              {"step": 1, "instruction": "Preheat oven to 220°C (425°F)."}
+              {"step": 1, "instruction": "Preheat oven to 220°C (425°F)."},
+              {"step": 2, "instruction": "Mix 500g bread flour, 7g instant yeast, 10g salt and 325ml lukewarm water to form dough"},
+              {"step": 3, "instruction": "Knead dough for 10 minutes until smooth and elastic"},
+              {"step": 4, "instruction": "Let dough rise in covered bowl for 1 hour or until doubled in size"},
+              {"step": 5, "instruction": "Punch down dough and shape into pizza base on floured surface"},
+              {"step": 6, "instruction": "Spread 200g tomato sauce evenly over base"},
+              {"step": 7, "instruction": "Top with 200g shredded mozzarella and desired toppings"},
+              {"step": 8, "instruction": "Bake for 12-15 minutes until crust is golden and cheese is bubbly"}
             ],
             "content_moderation": {
               "is_food_related": true,
@@ -119,12 +130,15 @@ async function analyzeWithGemini(videoUrl) {
     
     try {
       const responseText = result.response.text();
+      console.log('Raw Gemini response:', responseText);
       
       // Extract JSON from markdown code block if present
       const jsonMatch = responseText.match(/```(?:json)?\s*(\{[\s\S]*\})\s*```/);
       const jsonStr = jsonMatch ? jsonMatch[1] : responseText;
       
-      return JSON.parse(jsonStr);
+      const parsedJson = JSON.parse(jsonStr);
+      console.log('Parsed JSON response:', JSON.stringify(parsedJson, null, 2));
+      return parsedJson;
     } catch (parseError) {
       console.error('Error parsing Gemini response:', parseError, 'Response text:', result.response.text());
       return { tags: [], description: 'Failed to analyze video due to parsing error.' };
@@ -583,6 +597,11 @@ exports.processVideoAI = onObjectFinalized({
       description: aiResults.detailed_food_description || '',
       recipe: aiResults.detailed_step_by_step_recipe || [],
       ingredients: aiResults.quantified_ingredients || [],
+      content_moderation: aiResults.content_moderation || {
+        is_food_related: false,
+        is_nsfw: false,
+        reason: null
+      },
       ai_processed: true,
       updatedAt: admin.firestore.FieldValue.serverTimestamp()
     });
