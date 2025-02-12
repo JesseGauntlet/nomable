@@ -6,6 +6,7 @@ const path = require('path');
 const fs = require('fs');
 const { SecretManagerServiceClient } = require('@google-cloud/secret-manager');
 const { GoogleGenerativeAI } = require('@google/generative-ai');
+const { Storage } = require('@google-cloud/storage');
 
 const ffmpeg = require('fluent-ffmpeg');
 const ffmpegPath = require('ffmpeg-static');
@@ -20,6 +21,8 @@ const secretManager = new SecretManagerServiceClient({
 });
 const db = admin.firestore();
 
+const storage = new Storage();
+
 async function getGeminiKey() {
   const [version] = await secretManager.accessSecretVersion({
     name: `projects/${myProject}/secrets/Gemini/versions/latest`
@@ -32,49 +35,103 @@ async function analyzeWithGemini(videoUrl) {
   const genAI = new GoogleGenerativeAI(apiKey);
   const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
 
-  const prompt = `
-    Video analysis, returning primary food tags (e.g. pizza, and or italian,
-    but not dough or tomato sauce), detailed description of the food in the
-    video, quantified ingredients, detailed step by step recipe with
-    quantified ingredient usage, and content moderation
-    (if topic is_food_related, or topic is_nsfw, also add a "reason"
-    field that states why content moderation failed).
-
-    Format your response as JSON with these fields:
-    {
-      "video_id": "unique_video_identifier",
-      "topic": "food_related",
-      "primary_food_tags": ["pizza", "italian"],
-      "detailed_food_description": "A pepperoni pizza with a thick crust...",
-      "quantified_ingredients": [
-        {"ingredient": "pizza dough", "quantity": "500g"}
-      ],
-      "detailed_step_by_step_recipe": [
-        {"step": 1, "instruction": "Preheat oven to 220°C (425°F)."}
-      ],
-      "content_moderation": {
-        "is_food_related": true,
-        "is_nsfw": false,
-        "reason": null
-      }
-    }
-  `;
-
-  const response = await model.generateContent([
-    {
-      fileData: {
-        mimeType: 'video/mp4',
-        fileUri: videoUrl
-      }
-    },
-    { text: prompt }
-  ]);
-
   try {
-    return JSON.parse(response.text);
+    // Download video from GCS
+    const bucket = storage.bucket(videoUrl.split('/')[2]);
+    const fileName = videoUrl.split('/').slice(3).join('/');
+    const tempFilePath = path.join(os.tmpdir(), path.basename(videoUrl));
+    
+    try {
+      await bucket.file(fileName).download({
+        destination: tempFilePath
+      });
+    } catch (downloadError) {
+      console.error('Error downloading video:', downloadError);
+      throw downloadError;
+    }
+    
+    // Read file as base64
+    let videoBuffer;
+    try {
+      videoBuffer = await fs.promises.readFile(tempFilePath);
+    } catch (readError) {
+      console.error('Error reading video file:', readError);
+      throw readError;
+    }
+    
+    let base64Video;
+    try {
+      base64Video = videoBuffer.toString('base64');
+    } catch (base64Error) {
+      console.error('Error converting video to base64:', base64Error);
+      throw base64Error;
+    }
+    
+    // Clean up temp file
+    try {
+      await fs.promises.unlink(tempFilePath);
+    } catch (unlinkError) {
+      console.warn('Error cleaning up temporary file:', unlinkError);
+      // Non-critical error, continue processing
+    }
+
+    const prompt = `
+      Video analysis, returning primary food tags (e.g. pizza, and or italian,
+          but not dough or tomato sauce), detailed description of the food in the
+          video, quantified ingredients, detailed step by step recipe with
+          quantified ingredient usage, and content moderation
+          (if topic is_food_related, or topic is_nsfw, also add a "reason"
+          field that states why content moderation failed).
+
+          Format your response as JSON with these fields:
+          {
+            "video_id": "unique_video_identifier",
+            "topic": "food_related",
+            "primary_food_tags": ["pizza", "italian"],
+            "detailed_food_description": "A pepperoni pizza with a thick crust...",
+            "quantified_ingredients": [
+              {"ingredient": "pizza dough", "quantity": "500g"}
+            ],
+            "detailed_step_by_step_recipe": [
+              {"step": 1, "instruction": "Preheat oven to 220°C (425°F)."}
+            ],
+            "content_moderation": {
+              "is_food_related": true,
+              "is_nsfw": false,
+              "reason": null
+            }
+          }
+    `;
+    
+    const parts = [
+      {
+        inlineData: {
+          mimeType: 'video/mp4',
+          data: base64Video
+        },
+      },
+      { text: prompt },
+    ];
+    
+    const result = await model.generateContent({
+      contents: [{ role: 'user', parts }]
+    });
+    
+    try {
+      const responseText = result.response.text();
+      
+      // Extract JSON from markdown code block if present
+      const jsonMatch = responseText.match(/```(?:json)?\s*(\{[\s\S]*\})\s*```/);
+      const jsonStr = jsonMatch ? jsonMatch[1] : responseText;
+      
+      return JSON.parse(jsonStr);
+    } catch (parseError) {
+      console.error('Error parsing Gemini response:', parseError, 'Response text:', result.response.text());
+      return { tags: [], description: 'Failed to analyze video due to parsing error.' };
+    }
   } catch (error) {
-    console.error('Failed to parse Gemini response:', error);
-    return { tags: [], description: 'Failed to analyze video' };
+    console.error('Error analyzing video:', error);
+    return { tags: [], description: 'Failed to analyze video.' };
   }
 }
 

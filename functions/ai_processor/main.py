@@ -72,7 +72,9 @@ def analyze_with_gemini(video_url):
     }
     """
     
+    print("DEBUG: Calling Gemini API with video_url:", video_url)
     response = model.generate_content([prompt, video_part])
+    print("DEBUG: Gemini API raw response:", response.text)
     try:
         return json.loads(response.text)
     except json.JSONDecodeError:
@@ -81,17 +83,23 @@ def analyze_with_gemini(video_url):
 @functions_framework.cloud_event
 def process_video(cloud_event):
     """Cloud Function triggered by video upload to storage."""
-    # Gen2 functions receive CloudEvents
-    if cloud_event.type != "google.cloud.storage.object.v1.finalized":
+    # Use the CloudEvent's built-in attributes
+    print(f"CloudEvent: {cloud_event}")
+
+    if cloud_event.attributes['type'] != "google.cloud.storage.object.v1.finalized":
         return
-    
-    # The data field contains the Cloud Storage event data
-    file_data = cloud_event.data
-    
-    # Skip if not a video file
-    if not file_data["contentType"].startswith("video/"):
-        print("Not a video file, skipping")
-        return
+
+    file_data = cloud_event['data']
+    print("DEBUG: file_data:", file_data)
+
+    # Determine content type with a fallback based on file extension
+    ct = file_data.get("contentType", "")
+    if not ct and "name" in file_data and file_data["name"].lower().endswith(".mp4"):
+         ct = "video/mp4"
+
+    if not ct.startswith("video/"):
+         print("Not a video file, skipping. contentType:", ct)
+         return
         
     metadata = file_data.get("metadata", {})
     if metadata.get("useAI") != "true" or not metadata.get("postId"):
@@ -102,6 +110,7 @@ def process_video(cloud_event):
     try:
         # Generate GCS URL
         video_url = f"gs://{file_data['bucket']}/{file_data['name']}"
+        print("DEBUG: Generated video URL:", video_url)
         
         # Process with Gemini
         ai_results = analyze_with_gemini(video_url)
@@ -118,7 +127,7 @@ def process_video(cloud_event):
         })
         
     except Exception as e:
-        print(f"Error: {str(e)}")
+        print(f"Error during video processing: {str(e)}")
         if metadata.get("postId"):
             firestore_client.collection("posts").document(metadata["postId"]).update({
                 "ai_processed": False,
