@@ -6,6 +6,7 @@ import '../screens/profile_screen.dart';
 import 'video_action_buttons.dart';
 import 'video_description.dart';
 import 'feed_video_player.dart';
+import 'content_moderation_warning.dart';
 
 class VideoItem extends StatefulWidget {
   final FeedItem item;
@@ -63,6 +64,7 @@ class _VideoItemState extends State<VideoItem> {
         nextVideoUrl: widget.nextItem?.mediaUrl,
         nextPreviewUrl: widget.nextItem?.previewUrl,
         nextHlsUrl: widget.nextItem?.hlsUrl,
+        feedItem: widget.item,
       );
     }
     // Fallback for invalid URLs
@@ -103,118 +105,144 @@ class _VideoItemState extends State<VideoItem> {
       child: Stack(
         fit: StackFit.expand,
         children: [
-          // Video content (either player or placeholder)
-          Positioned.fill(
-            child: _buildVideoContent(),
-          ),
-
-          // Gradient overlays for better text visibility
-          Positioned.fill(
-            child: DecoratedBox(
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.bottomCenter,
-                  end: Alignment.topCenter,
-                  stops: const [0.0, 0.3, 0.5],
-                  colors: [
-                    Colors.black.withOpacity(0.8),
-                    Colors.black.withOpacity(0.2),
-                    Colors.transparent,
-                  ],
-                ),
+          // Base layer with video and UI elements
+          Stack(
+            fit: StackFit.expand,
+            children: [
+              // Video player
+              FeedVideoPlayer(
+                videoUrl: widget.item.mediaUrl,
+                previewUrl: widget.item.previewUrl,
+                hlsUrl: widget.item.hlsUrl,
+                nextVideoUrl: widget.nextItem?.mediaUrl,
+                nextPreviewUrl: widget.nextItem?.previewUrl,
+                nextHlsUrl: widget.nextItem?.hlsUrl,
+                feedItem: widget.item,
+                showWarningScreen: false, // Don't show warning in video player
               ),
-            ),
-          ),
 
-          // Profile picture above action buttons
-          Positioned(
-            right: 8,
-            bottom: bottomPadding + 275,
-            child: Column(
-              children: [
-                GestureDetector(
-                  onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => ProfileScreen(
-                          userId: widget.item.userId,
-                        ),
-                      ),
-                    );
-                  },
-                  child: Container(
-                    width: 45,
-                    height: 45,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      border: Border.all(
-                        color: Colors.white,
-                        width: 2,
-                      ),
-                    ),
-                    child: CircleAvatar(
-                      backgroundColor: Colors.grey[800],
-                      backgroundImage: _userPhotoUrl != null
-                          ? NetworkImage(_userPhotoUrl!)
-                          : _username != null
-                              ? NetworkImage(
-                                  'https://ui-avatars.com/api/?name=$_username&background=random')
-                              : null,
-                      child: _isLoadingUsername
-                          ? const CircularProgressIndicator(
-                              valueColor:
-                                  AlwaysStoppedAnimation<Color>(Colors.white),
-                            )
-                          : (_userPhotoUrl == null && _username == null)
-                              ? const Icon(Icons.person, color: Colors.white)
-                              : null,
+              // Gradient overlays for better text visibility
+              Positioned.fill(
+                child: DecoratedBox(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.bottomCenter,
+                      end: Alignment.topCenter,
+                      stops: const [0.0, 0.3, 0.5],
+                      colors: [
+                        Colors.black.withOpacity(0.8),
+                        Colors.black.withOpacity(0.2),
+                        Colors.transparent,
+                      ],
                     ),
                   ),
                 ),
-                const SizedBox(height: 8),
-              ],
-            ),
+              ),
+
+              // Profile picture above action buttons
+              Positioned(
+                right: 8,
+                bottom: bottomPadding + 275,
+                child: Column(
+                  children: [
+                    GestureDetector(
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => ProfileScreen(
+                              userId: widget.item.userId,
+                            ),
+                          ),
+                        );
+                      },
+                      child: Container(
+                        width: 45,
+                        height: 45,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          border: Border.all(
+                            color: Colors.white,
+                            width: 2,
+                          ),
+                        ),
+                        child: CircleAvatar(
+                          backgroundColor: Colors.grey[800],
+                          backgroundImage: _userPhotoUrl != null
+                              ? NetworkImage(_userPhotoUrl!)
+                              : _username != null
+                                  ? NetworkImage(
+                                      'https://ui-avatars.com/api/?name=$_username&background=random')
+                                  : null,
+                          child: _isLoadingUsername
+                              ? const CircularProgressIndicator(
+                                  valueColor: AlwaysStoppedAnimation<Color>(
+                                      Colors.white),
+                                )
+                              : (_userPhotoUrl == null && _username == null)
+                                  ? const Icon(Icons.person,
+                                      color: Colors.white)
+                                  : null,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                  ],
+                ),
+              ),
+
+              // Action buttons (like, bookmark, share)
+              Positioned(
+                right: 8,
+                bottom: bottomPadding + 20,
+                child: VideoActionButtons(
+                  heartCount: widget.item.heartCount,
+                  bookmarkCount: widget.item.bookmarkCount,
+                  onHeartPressed: _handleHeartPress,
+                  onBookmarkPressed: () {
+                    // TODO: Implement bookmark action
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                          content: Text('Bookmark feature coming soon!')),
+                    );
+                  },
+                  onSharePressed: () {
+                    // TODO: Implement share action
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                          content: Text('Share feature coming soon!')),
+                    );
+                  },
+                  bottomPadding: 0,
+                ),
+              ),
+
+              // Video description and user info
+              Positioned(
+                left: 8,
+                right: 72,
+                bottom: bottomPadding + 20,
+                child: VideoDescription(
+                  username: _username ?? widget.item.userId,
+                  isLoadingUsername: _isLoadingUsername,
+                  description: widget.item.description,
+                  foodTags: widget.item.foodTags,
+                  bottomPadding: 0,
+                ),
+              ),
+            ],
           ),
 
-          // Action buttons (like, bookmark, share)
-          Positioned(
-            right: 8,
-            bottom: bottomPadding + 20,
-            child: VideoActionButtons(
-              heartCount: widget.item.heartCount,
-              bookmarkCount: widget.item.bookmarkCount,
-              onHeartPressed: _handleHeartPress,
-              onBookmarkPressed: () {
-                // TODO: Implement bookmark action
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                      content: Text('Bookmark feature coming soon!')),
-                );
+          // Content moderation warning overlay (on top of everything)
+          if (widget.item.isNsfw == true || widget.item.isFoodRelated == false)
+            ContentModerationWarning(
+              isFoodRelated: widget.item.isFoodRelated,
+              isNsfw: widget.item.isNsfw,
+              moderationReason: widget.item.moderationReason,
+              onContinue: () {
+                setState(() {}); // Trigger rebuild to remove warning
               },
-              onSharePressed: () {
-                // TODO: Implement share action
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Share feature coming soon!')),
-                );
-              },
-              bottomPadding: 0,
             ),
-          ),
-
-          // Video description and user info
-          Positioned(
-            left: 8,
-            right: 72,
-            bottom: bottomPadding + 20,
-            child: VideoDescription(
-              username: _username ?? widget.item.userId,
-              isLoadingUsername: _isLoadingUsername,
-              description: widget.item.description,
-              foodTags: widget.item.foodTags,
-              bottomPadding: 0,
-            ),
-          ),
         ],
       ),
     );

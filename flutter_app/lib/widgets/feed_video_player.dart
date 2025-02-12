@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:video_player/video_player.dart';
 import 'dart:async';
 import 'package:chewie/chewie.dart';
+import '../models/feed_item.dart';
+import 'content_moderation_warning.dart';
 
 class FeedVideoPlayer extends StatefulWidget {
   final String videoUrl;
@@ -10,6 +12,8 @@ class FeedVideoPlayer extends StatefulWidget {
   final String? nextVideoUrl;
   final String? nextPreviewUrl;
   final String? nextHlsUrl;
+  final FeedItem feedItem;
+  final bool showWarningScreen;
 
   // Static cache to store prefetched controllers keyed by video URL
   static final Map<String, (VideoPlayerController, ChewieController?)>
@@ -60,6 +64,8 @@ class FeedVideoPlayer extends StatefulWidget {
     this.nextVideoUrl,
     this.nextPreviewUrl,
     this.nextHlsUrl,
+    required this.feedItem,
+    this.showWarningScreen = true,
   });
 
   @override
@@ -73,6 +79,8 @@ class _FeedVideoPlayerState extends State<FeedVideoPlayer> {
   VideoPlayerController? _controller;
   ChewieController? _chewieController;
   String _currentQuality = 'Unknown'; // Track current video quality
+  bool _showWarning = false;
+  bool _userAcceptedWarning = false;
 
   @override
   void initState() {
@@ -81,7 +89,15 @@ class _FeedVideoPlayerState extends State<FeedVideoPlayer> {
     debugPrint('Preview URL available: ${widget.previewUrl != null}');
     debugPrint('HLS URL available: ${widget.hlsUrl != null}');
     FeedVideoPlayer._logCacheState();
-    _setupVideoPlayer();
+    _showWarning = widget.showWarningScreen && _shouldShowWarning();
+    if (!_showWarning) {
+      _setupVideoPlayer();
+    }
+  }
+
+  bool _shouldShowWarning() {
+    return widget.feedItem.isNsfw == true ||
+        widget.feedItem.isFoodRelated == false;
   }
 
   // Improved controller cleanup method that optionally skips cache cleanup
@@ -333,6 +349,20 @@ class _FeedVideoPlayerState extends State<FeedVideoPlayer> {
 
   @override
   Widget build(BuildContext context) {
+    if (_showWarning && !_userAcceptedWarning) {
+      return ContentModerationWarning(
+        isFoodRelated: widget.feedItem.isFoodRelated,
+        isNsfw: widget.feedItem.isNsfw,
+        moderationReason: widget.feedItem.moderationReason,
+        onContinue: () {
+          setState(() {
+            _userAcceptedWarning = true;
+            _setupVideoPlayer();
+          });
+        },
+      );
+    }
+
     if (!_isInitialized || _controller == null || _chewieController == null) {
       return const Center(
         child: CircularProgressIndicator(

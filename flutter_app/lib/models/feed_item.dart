@@ -16,6 +16,10 @@ class FeedItem {
   final DateTime? createdAt;
   final List<dynamic>? recipe;
   final List<dynamic>? ingredients;
+  // Content moderation fields
+  final bool? isFoodRelated;
+  final bool? isNsfw;
+  final String? moderationReason;
 
   FeedItem({
     required this.id,
@@ -33,10 +37,18 @@ class FeedItem {
     this.createdAt,
     this.recipe,
     this.ingredients,
+    this.isFoodRelated,
+    this.isNsfw,
+    this.moderationReason,
   });
 
   factory FeedItem.fromFirestore(DocumentSnapshot doc) {
     final data = doc.data() as Map<String, dynamic>;
+
+    // Extract content moderation data
+    final contentModeration =
+        data['content_moderation'] as Map<String, dynamic>?;
+
     return FeedItem(
       id: doc.id,
       userId: data['userId'] as String,
@@ -51,8 +63,12 @@ class FeedItem {
       heartCount: data['heartCount'] as int? ?? 0,
       bookmarkCount: data['bookmarkCount'] as int? ?? 0,
       createdAt: (data['createdAt'] as Timestamp?)?.toDate(),
-      recipe: data['recipe'] ?? [],
-      ingredients: data['ingredients'] ?? [],
+      recipe: data['recipe'] as List<dynamic>?,
+      ingredients: data['ingredients'] as List<dynamic>?,
+      // Add content moderation fields
+      isFoodRelated: contentModeration?['is_food_related'] as bool?,
+      isNsfw: contentModeration?['is_nsfw'] as bool?,
+      moderationReason: contentModeration?['reason'] as String?,
     );
   }
 
