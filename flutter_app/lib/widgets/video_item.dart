@@ -28,6 +28,7 @@ class _VideoItemState extends State<VideoItem> {
   String? _username;
   String? _userPhotoUrl;
   bool _isLoadingUsername = true;
+  bool _hasAcceptedWarning = false;
 
   @override
   void initState() {
@@ -234,13 +235,17 @@ class _VideoItemState extends State<VideoItem> {
           ),
 
           // Content moderation warning overlay (on top of everything)
-          if (widget.item.isNsfw == true || widget.item.isFoodRelated == false)
+          if ((widget.item.isNsfw == true ||
+                  widget.item.isFoodRelated == false) &&
+              !_hasAcceptedWarning)
             ContentModerationWarning(
               isFoodRelated: widget.item.isFoodRelated,
               isNsfw: widget.item.isNsfw,
               moderationReason: widget.item.moderationReason,
               onContinue: () {
-                setState(() {}); // Trigger rebuild to remove warning
+                setState(() {
+                  _hasAcceptedWarning = true;
+                });
               },
             ),
         ],
