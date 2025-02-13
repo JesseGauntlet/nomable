@@ -658,10 +658,11 @@ exports.getRestaurantRecommendations = onCall({
       throw new Error('Missing Google Places API key.');
     }
 
-    // 4. Sort tags by their weight (descending)
+    // 4. Sort tags by their weight (descending) and take the top 3
     const sortedTags = Object.entries(tags)
       .sort(([, weightA], [, weightB]) => weightB - weightA)
-      .map(([tag]) => tag);
+      .map(([tag]) => tag)
+      .slice(0, 4);
 
     // Container for all results and to avoid duplicates
     let allResults = [];
@@ -689,19 +690,19 @@ exports.getRestaurantRecommendations = onCall({
           // Merge results across pagination
           let mergedResults = response.data.results || [];
 
-          // 5a. Handle next_page_token if present
-          while (response.data.next_page_token) {
-            // Per Google's documentation, wait ~2 seconds before using next_page_token
-            await new Promise((resolve) => setTimeout(resolve, 2000));
+          // // 5a. Handle next_page_token if present
+          // while (response.data.next_page_token) {
+          //   // Per Google's documentation, wait ~2 seconds before using next_page_token
+          //   await new Promise((resolve) => setTimeout(resolve, 2000));
 
-            response = await axios.get(baseUrl, {
-              params: {
-                pagetoken: response.data.next_page_token,
-                key: apiKey,
-              },
-            });
-            mergedResults = mergedResults.concat(response.data.results || []);
-          }
+          //   response = await axios.get(baseUrl, {
+          //     params: {
+          //       pagetoken: response.data.next_page_token,
+          //       key: apiKey,
+          //     },
+          //   });
+          //   mergedResults = mergedResults.concat(response.data.results || []);
+          // }
 
           // Format the data with matchedTag for sorting logic
           const formattedResults = mergedResults.map((place) => {
@@ -760,10 +761,8 @@ exports.getRestaurantRecommendations = onCall({
       return (b.rating || 0) - (a.rating || 0);
     });
 
-    // 9. Return top 20, stripping out 'matchedTag'
-    const finalResults = allResults
-      .slice(0, 20)
-      .map(({ matchedTag, ...rest }) => rest);
+    // 9. Return top 30, retaining 'matchedTag'
+    const finalResults = allResults.slice(0, 30);
 
     console.log('Final results to be sent to client:', finalResults);
     return finalResults;

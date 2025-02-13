@@ -3,6 +3,8 @@ import 'package:geolocator/geolocator.dart';
 import '../models/restaurant.dart';
 import '../services/location_service.dart';
 import '../services/restaurant_service.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 class ExploreScreen extends StatefulWidget {
   const ExploreScreen({Key? key}) : super(key: key);
@@ -20,11 +22,30 @@ class _ExploreScreenState extends State<ExploreScreen> {
   String? _error;
   Position?
       _currentPosition; // Store current position for distance calculations
+  // State variable to track selected sorting option
+  String _selectedSortOption = 'Rating';
 
   @override
   void initState() {
     super.initState();
     _loadRestaurants(forceRefresh: false);
+  }
+
+  // Helper function to fetch real user tags from Firestore
+  Future<Map<String, int>> _getUserTags() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) {
+      throw Exception('User not logged in.');
+    }
+    final userDoc = await FirebaseFirestore.instance
+        .collection('users')
+        .doc(user.uid)
+        .get();
+    final data = userDoc.data();
+    if (data != null && data.containsKey('foodPreferences')) {
+      return Map<String, int>.from(data['foodPreferences']);
+    }
+    return {};
   }
 
   Future<void> _loadRestaurants({bool forceRefresh = false}) async {
@@ -34,21 +55,22 @@ class _ExploreScreenState extends State<ExploreScreen> {
     });
 
     try {
-      // If no cache or force refresh, proceed with API call
-      final position = await _locationService.getCurrentPosition();
+      // Use cached location if not forcing refresh
+      final position = forceRefresh
+          ? await _locationService.getCurrentPosition()
+          : await _locationService.getLastKnownPosition();
       _currentPosition = position;
 
-      // TODO: Get user tags from user service
-      final Map<String, int> mockTags = {
-        'pizza': 10,
-        'sushi': 6,
-        'ramen': 2,
-      };
+      // Fetch real user tags from Firestore
+      final Map<String, int> userTags = await _getUserTags();
+      if (userTags.isEmpty) {
+        throw Exception('No food preferences found for the user.');
+      }
 
-      // Fetch recommendations
+      // Fetch recommendations using the real user tags
       final recommendations = await _restaurantService.getRecommendations(
         position: position,
-        tags: mockTags,
+        tags: userTags,
         forceRefresh: forceRefresh,
       );
 
@@ -56,6 +78,9 @@ class _ExploreScreenState extends State<ExploreScreen> {
         _restaurants = recommendations;
         _isLoading = false;
       });
+
+      // Apply current sorting option after loading
+      _sortRestaurants(_selectedSortOption);
     } catch (e) {
       setState(() {
         _error = e.toString();
@@ -71,6 +96,48 @@ class _ExploreScreenState extends State<ExploreScreen> {
     } else {
       final km = meters / 1000;
       return '${km.toStringAsFixed(1)}km';
+    }
+  }
+
+  // Helper function to get a fun color for a given tag
+  Color _getTagColor(String tag) {
+    // Define a list of fun colors
+    final List<Color> funColors = [
+      Colors.redAccent,
+      Colors.blueAccent,
+      Colors.greenAccent,
+      Colors.orangeAccent,
+      Colors.pinkAccent,
+      Colors.purpleAccent,
+      Colors.tealAccent,
+      Colors.cyanAccent,
+      Colors.amberAccent,
+      Colors.limeAccent,
+    ];
+    // Use hashCode to pick a color from the list
+    final index = tag.hashCode.abs() % funColors.length;
+    return funColors[index];
+  }
+
+  // Method to sort restaurants based on selected sort option
+  void _sortRestaurants(String sortOption) {
+    if (sortOption == 'Rating') {
+      // Sort by rating descending
+      setState(() {
+        _restaurants = _restaurantService.sortByRating(List.from(_restaurants),
+            ascending: false);
+      });
+    } else if (sortOption == 'Distance') {
+      if (_currentPosition != null) {
+        // Sort by distance ascending
+        setState(() {
+          _restaurants = _restaurantService.sortByDistance(
+              List.from(_restaurants), _currentPosition!,
+              ascending: true);
+        });
+      } else {
+        debugPrint('Current position is null, cannot sort by distance');
+      }
     }
   }
 
@@ -121,15 +188,46 @@ class _ExploreScreenState extends State<ExploreScreen> {
       );
     }
 
-    return RefreshIndicator(
-      onRefresh: () => _loadRestaurants(forceRefresh: true),
-      child: ListView.builder(
-        itemCount: _restaurants.length,
-        itemBuilder: (context, index) {
-          final restaurant = _restaurants[index];
-          return _buildRestaurantCard(restaurant);
-        },
-      ),
+    // Build sorting controls and restaurant list
+    return Column(
+      children: [
+        Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text('Sort by:'),
+              DropdownButton<String>(
+                value: _selectedSortOption,
+                items: const [
+                  DropdownMenuItem(value: 'Rating', child: Text('Rating')),
+                  DropdownMenuItem(value: 'Distance', child: Text('Distance')),
+                ],
+                onChanged: (value) {
+                  if (value != null) {
+                    setState(() {
+                      _selectedSortOption = value;
+                    });
+                    _sortRestaurants(value);
+                  }
+                },
+              ),
+            ],
+          ),
+        ),
+        Expanded(
+          child: RefreshIndicator(
+            onRefresh: () => _loadRestaurants(forceRefresh: true),
+            child: ListView.builder(
+              itemCount: _restaurants.length,
+              itemBuilder: (context, index) {
+                final restaurant = _restaurants[index];
+                return _buildRestaurantCard(restaurant);
+              },
+            ),
+          ),
+        ),
+      ],
     );
   }
 
@@ -227,6 +325,24 @@ class _ExploreScreenState extends State<ExploreScreen> {
                   restaurant.address,
                   style: Theme.of(context).textTheme.bodyMedium,
                 ),
+                if (restaurant.matchedTag != null)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 8.0),
+                    child: Chip(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 6, vertical: 2),
+                      materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      visualDensity: VisualDensity.compact,
+                      label: Text(
+                        '${restaurant.matchedTag}',
+                        style: Theme.of(context)
+                            .textTheme
+                            .bodySmall
+                            ?.copyWith(fontSize: 10, color: Colors.white),
+                      ),
+                      backgroundColor: _getTagColor(restaurant.matchedTag!),
+                    ),
+                  ),
               ],
             ),
           ),

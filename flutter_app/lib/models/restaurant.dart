@@ -12,6 +12,7 @@ class Restaurant {
   final List<String> types;
   final bool isOpen;
   final double? priceLevel;
+  final String? matchedTag;
 
   Restaurant({
     required this.id,
@@ -24,6 +25,7 @@ class Restaurant {
     required this.types,
     required this.isOpen,
     this.priceLevel,
+    this.matchedTag,
   });
 
   // Create Restaurant object from Google Places API response
@@ -42,6 +44,7 @@ class Restaurant {
       types: List<String>.from(map['types'] ?? []),
       isOpen: map['isOpen'] ?? false,
       priceLevel: map['priceLevel']?.toDouble(),
+      matchedTag: map['matchedTag'],
     );
   }
 
@@ -58,6 +61,7 @@ class Restaurant {
       'types': types,
       'isOpen': isOpen,
       'priceLevel': priceLevel,
+      'matchedTag': matchedTag,
     };
   }
 }

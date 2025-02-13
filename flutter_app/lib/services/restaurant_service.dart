@@ -160,18 +160,18 @@ class RestaurantService {
 
   /// Sort restaurants by distance from a given position
   List<Restaurant> sortByDistance(
-      List<Restaurant> restaurants, Position userPosition,
+      List<Restaurant> restaurants, Position currentPosition,
       {bool ascending = true}) {
     restaurants.sort((a, b) {
-      double distanceA = Geolocator.distanceBetween(
-        userPosition.latitude,
-        userPosition.longitude,
+      final distanceA = Geolocator.distanceBetween(
+        currentPosition.latitude,
+        currentPosition.longitude,
         a.latitude,
         a.longitude,
       );
-      double distanceB = Geolocator.distanceBetween(
-        userPosition.latitude,
-        userPosition.longitude,
+      final distanceB = Geolocator.distanceBetween(
+        currentPosition.latitude,
+        currentPosition.longitude,
         b.latitude,
         b.longitude,
       );
