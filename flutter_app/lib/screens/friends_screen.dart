@@ -290,16 +290,45 @@ class FriendsScreenState extends State<FriendsScreen>
         title: const Text('Friends'),
         backgroundColor: Theme.of(context).colorScheme.surface,
         actions: [
-          // Add Groups button in the app bar
-          IconButton(
-            icon: const Icon(Icons.groups),
-            tooltip: 'Food Groups',
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => const GroupsScreen()),
-              );
-            },
+          // Enhanced Groups Button: Outline style button with no fill and rounded corners
+          Center(
+            child: Padding(
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 8.0, vertical: 4.0),
+              child: OutlinedButton.icon(
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                        builder: (context) => const GroupsScreen()),
+                  );
+                },
+                icon: Icon(
+                  Icons.groups,
+                  size: 24,
+                  weight: 700,
+                  color: Theme.of(context).colorScheme.primary,
+                ),
+                label: Text(
+                  "View Groups",
+                  style: TextStyle(
+                    color: Theme.of(context).colorScheme.primary,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                style: OutlinedButton.styleFrom(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  side: BorderSide(
+                    color: Theme.of(context).colorScheme.primary,
+                    width: 2,
+                  ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                ),
+              ),
+            ),
           ),
         ],
         bottom: TabBar(

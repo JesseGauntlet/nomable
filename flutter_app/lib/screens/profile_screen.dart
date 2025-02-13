@@ -259,11 +259,17 @@ class _ProfileScreenState extends State<ProfileScreen>
                     const SizedBox(height: 12),
                     // Stats
                     Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                      mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        _buildStat('Following', _user!.followingCount),
-                        _buildStat('Followers', _user!.followersCount),
-                        _buildStat('Likes', _user!.heartCount),
+                        Expanded(
+                          child: _buildStat('Following', _user!.followingCount),
+                        ),
+                        Expanded(
+                          child: _buildStat('Followers', _user!.followersCount),
+                        ),
+                        Expanded(
+                          child: _buildStat('Likes', _user!.heartCount),
+                        ),
                       ],
                     ),
                     const SizedBox(height: 12),

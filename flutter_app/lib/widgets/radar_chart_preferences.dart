@@ -15,7 +15,7 @@ class PreferencesRadarChart extends StatelessWidget {
     required this.preferences,
     required this.userId,
     required this.userName,
-    this.maxPreferences = 5,
+    this.maxPreferences = 6,
   });
 
   @override
@@ -67,11 +67,12 @@ class PreferencesRadarChart extends StatelessWidget {
                       child: RadarChart(
                         RadarChartData(
                           radarShape: RadarShape.polygon,
-                          tickCount: 5,
+                          tickCount: 6,
                           ticksTextStyle: const TextStyle(fontSize: 0),
                           dataSets: [
                             RadarDataSet(
-                              fillColor: Colors.blue.withOpacity(0.2),
+                              fillColor:
+                                  Colors.blue.withAlpha(51), // 0.2 * 255 ≈ 51
                               borderColor: Colors.blue,
                               entryRadius: 2,
                               dataEntries: [
@@ -83,7 +84,8 @@ class PreferencesRadarChart extends StatelessWidget {
                             ),
                             if (currentUser != null && !isCurrentUserProfile)
                               RadarDataSet(
-                                fillColor: Colors.red.withOpacity(0.2),
+                                fillColor:
+                                    Colors.red.withAlpha(51), // 0.2 * 255 ≈ 51
                                 borderColor: Colors.red,
                                 entryRadius: 2,
                                 dataEntries: [
@@ -130,7 +132,7 @@ class PreferencesRadarChart extends StatelessWidget {
           width: 12,
           height: 12,
           decoration: BoxDecoration(
-            color: color.withOpacity(0.2),
+            color: Color.fromRGBO(color.red, color.green, color.blue, 0.2),
             border: Border.all(color: color),
           ),
         ),
