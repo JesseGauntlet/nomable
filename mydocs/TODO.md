@@ -57,10 +57,16 @@ Monday 2/10 (AI week)
 3) Fix thumbnail generation bug too wide: https://chatgpt.com/c/67a3781e-aa9c-8004-89b4-90c420342044 (done)
 4) Upgrade to cloud functions v2
 5) Update cloud function to be parallelized
-6) Update cloud function to use more memory for video processing (GiB not GB)
+6) Update cloud function to use more memory for video processing (GiB not GB) (done)
 
 Tuesday 2/11 (AI start)
 1) AI: Gemini 2.0 video / image frame analysis
+2) Auto-Recipe screen, auto-tags, auto-description (done)
+
+Wednesday 2/12
+1) Radar chart preferences -> change to hexagon instead of pentagon (todo)
+2) Content moderation (done)
+3) Restaurant Recommendations?
 
 Beyond
 1) Feed algorithm

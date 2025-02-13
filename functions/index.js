@@ -1,9 +1,11 @@
 const { onObjectFinalized } = require('firebase-functions/v2/storage');
 const { onDocumentCreated } = require('firebase-functions/v2/firestore');
+const { onCall } = require('firebase-functions/v2/https');
 const admin = require('firebase-admin');
 const os = require('os');
 const path = require('path');
 const fs = require('fs');
+const axios = require('axios');
 const { SecretManagerServiceClient } = require('@google-cloud/secret-manager');
 const { GoogleGenerativeAI } = require('@google/generative-ai');
 const { Storage } = require('@google-cloud/storage');
@@ -619,5 +621,151 @@ exports.processVideoAI = onObjectFinalized({
       });
     }
     return null;
+  }
+});
+
+async function getGooglePlacesKey() {
+  const [version] = await secretManager.accessSecretVersion({
+    name: `projects/${myProject}/secrets/GooglePlaces/versions/latest`
+  });
+  return version.payload.data.toString();
+}
+
+// Cloud Function for restaurant recommendations
+exports.getRestaurantRecommendations = onCall({
+  timeoutSeconds: 60,
+  memory: '256MiB',
+}, async (request) => {
+  try {
+    // 1. Authentication Check
+    if (!request.auth) {
+      throw new Error('Unauthenticated. Please sign in to use this feature.');
+    }
+
+    const { latitude, longitude, tags, radius } = request.data || {};
+    if (!latitude || !longitude || !tags) {
+      throw new Error('Missing required parameters: latitude, longitude, or tags');
+    }
+
+    // 2. Use provided radius or default to 1500 meters
+    const searchRadius = radius || 1500;
+
+    // 3. Retrieve API Key
+    const apiKey = await getGooglePlacesKey();
+    if (!apiKey) {
+      throw new Error('Missing Google Places API key.');
+    }
+
+    // 4. Sort tags by their weight (descending)
+    const sortedTags = Object.entries(tags)
+      .sort(([, weightA], [, weightB]) => weightB - weightA)
+      .map(([tag]) => tag);
+
+    // Container for all results and to avoid duplicates
+    let allResults = [];
+    const seenPlaceIds = new Set();
+
+    // 5. Prepare parallel requests for each tag
+    const requests = sortedTags.map((tag) =>
+      (async () => {
+        try {
+          const baseUrl = 'https://maps.googleapis.com/maps/api/place/nearbysearch/json';
+
+          // First page
+          let response = await axios.get(baseUrl, {
+            params: {
+              location: `${latitude},${longitude}`,
+              radius: searchRadius,
+              type: 'restaurant',
+              keyword: tag,
+              key: apiKey,
+            },
+          });
+
+          // Merge results across pagination
+          let mergedResults = response.data.results || [];
+
+          // 5a. Handle next_page_token if present
+          while (response.data.next_page_token) {
+            // Per Google's documentation, wait ~2 seconds before using next_page_token
+            await new Promise((resolve) => setTimeout(resolve, 2000));
+
+            response = await axios.get(baseUrl, {
+              params: {
+                pagetoken: response.data.next_page_token,
+                key: apiKey,
+              },
+            });
+            mergedResults = mergedResults.concat(response.data.results || []);
+          }
+
+          // Format the data with matchedTag for sorting logic
+          return mergedResults.map((place) => {
+            const photoRef = place.photos?.[0]?.photo_reference;
+            const photoUrl = photoRef 
+              ? `https://maps.googleapis.com/maps/api/place/photo?maxwidth=400&photo_reference=${photoRef}&key=${apiKey}`
+              : '';
+
+            return {
+              id: place.place_id,
+              name: place.name || '',
+              rating: place.rating || 0,
+              address: place.vicinity || '',
+              latitude: place.geometry?.location?.lat || 0,
+              longitude: place.geometry?.location?.lng || 0,
+              photoReference: photoRef || '',
+              photoUrl: photoUrl,
+              types: place.types || [],
+              isOpen: place.opening_hours?.open_now || false,
+              priceLevel: place.price_level ?? null,
+              matchedTag: tag,
+            };
+          });
+        } catch (err) {
+          console.error(`Error fetching restaurants for tag ${tag}:`, err);
+          return []; // Return empty array to continue gracefully
+        }
+      })()
+    );
+
+    // 6. Execute all tag requests in parallel
+    const responses = await Promise.allSettled(requests);
+
+    // 7. Combine & de-duplicate results
+    for (const [i, res] of responses.entries()) {
+      if (res.status === 'fulfilled') {
+        const places = res.value;
+        for (const place of places) {
+          if (!seenPlaceIds.has(place.id)) {
+            seenPlaceIds.add(place.id);
+            allResults.push(place);
+          }
+        }
+      } else {
+        console.error(`Error fetching restaurants for tag ${sortedTags[i]}:`, res.reason);
+      }
+    }
+
+    // 8. Sort by (a) tag weight, then (b) rating
+    allResults.sort((a, b) => {
+      const tagWeightA = tags[a.matchedTag] || 0;
+      const tagWeightB = tags[b.matchedTag] || 0;
+      // Primary: tag weight
+      if (tagWeightB !== tagWeightA) {
+        return tagWeightB - tagWeightA;
+      }
+      // Secondary: rating
+      return (b.rating || 0) - (a.rating || 0);
+    });
+
+    // 9. Return top 20, stripping out 'matchedTag'
+    const finalResults = allResults
+      .slice(0, 20)
+      .map(({ matchedTag, ...rest }) => rest);
+
+    return finalResults;
+  } catch (error) {
+    console.error('Error in getRestaurantRecommendations:', error);
+    throw new Error(`Failed to fetch restaurant recommendations: ${error.message}`);
   }
 }); 
