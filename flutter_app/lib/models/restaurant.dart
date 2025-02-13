@@ -1,4 +1,6 @@
 // Model class for restaurant data from Google Places API
+import 'package:flutter/foundation.dart';
+
 class Restaurant {
   final String id;
   final String name;
@@ -7,7 +9,6 @@ class Restaurant {
   final double latitude;
   final double longitude;
   final String photoReference;
-  final String photoUrl;
   final List<String> types;
   final bool isOpen;
   final double? priceLevel;
@@ -20,7 +21,6 @@ class Restaurant {
     required this.latitude,
     required this.longitude,
     required this.photoReference,
-    required this.photoUrl,
     required this.types,
     required this.isOpen,
     this.priceLevel,
@@ -28,15 +28,17 @@ class Restaurant {
 
   // Create Restaurant object from Google Places API response
   factory Restaurant.fromMap(Map<String, dynamic> map) {
+    // Add logging to see the raw map data
+    debugPrint('Creating Restaurant from map: $map');
+
     return Restaurant(
       id: map['id'] ?? '',
       name: map['name'] ?? '',
       rating: (map['rating'] ?? 0).toDouble(),
       address: map['address'] ?? '',
-      latitude: map['latitude'] ?? 0.0,
-      longitude: map['longitude'] ?? 0.0,
+      latitude: (map['latitude'] ?? 0).toDouble(),
+      longitude: (map['longitude'] ?? 0).toDouble(),
       photoReference: map['photoReference'] ?? '',
-      photoUrl: map['photoUrl'] ?? '',
       types: List<String>.from(map['types'] ?? []),
       isOpen: map['isOpen'] ?? false,
       priceLevel: map['priceLevel']?.toDouble(),
@@ -53,7 +55,6 @@ class Restaurant {
       'latitude': latitude,
       'longitude': longitude,
       'photoReference': photoReference,
-      'photoUrl': photoUrl,
       'types': types,
       'isOpen': isOpen,
       'priceLevel': priceLevel,

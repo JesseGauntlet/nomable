@@ -18,22 +18,25 @@ class _ExploreScreenState extends State<ExploreScreen> {
   List<Restaurant> _restaurants = [];
   bool _isLoading = false;
   String? _error;
+  Position?
+      _currentPosition; // Store current position for distance calculations
 
   @override
   void initState() {
     super.initState();
-    _loadRestaurants();
+    _loadRestaurants(forceRefresh: false);
   }
 
-  Future<void> _loadRestaurants() async {
+  Future<void> _loadRestaurants({bool forceRefresh = false}) async {
     setState(() {
       _isLoading = true;
       _error = null;
     });
 
     try {
-      // Get current location
+      // If no cache or force refresh, proceed with API call
       final position = await _locationService.getCurrentPosition();
+      _currentPosition = position;
 
       // TODO: Get user tags from user service
       final Map<String, int> mockTags = {
@@ -46,6 +49,7 @@ class _ExploreScreenState extends State<ExploreScreen> {
       final recommendations = await _restaurantService.getRecommendations(
         position: position,
         tags: mockTags,
+        forceRefresh: forceRefresh,
       );
 
       setState(() {
@@ -60,6 +64,16 @@ class _ExploreScreenState extends State<ExploreScreen> {
     }
   }
 
+  // Format distance in a human-readable way
+  String _formatDistance(double meters) {
+    if (meters < 1000) {
+      return '${meters.round()}m';
+    } else {
+      final km = meters / 1000;
+      return '${km.toStringAsFixed(1)}km';
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -68,7 +82,7 @@ class _ExploreScreenState extends State<ExploreScreen> {
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh),
-            onPressed: _loadRestaurants,
+            onPressed: () => _loadRestaurants(forceRefresh: true),
           ),
         ],
       ),
@@ -93,7 +107,7 @@ class _ExploreScreenState extends State<ExploreScreen> {
             ),
             const SizedBox(height: 16),
             ElevatedButton(
-              onPressed: _loadRestaurants,
+              onPressed: () => _loadRestaurants(forceRefresh: true),
               child: const Text('Retry'),
             ),
           ],
@@ -108,7 +122,7 @@ class _ExploreScreenState extends State<ExploreScreen> {
     }
 
     return RefreshIndicator(
-      onRefresh: _loadRestaurants,
+      onRefresh: () => _loadRestaurants(forceRefresh: true),
       child: ListView.builder(
         itemCount: _restaurants.length,
         itemBuilder: (context, index) {
@@ -120,32 +134,56 @@ class _ExploreScreenState extends State<ExploreScreen> {
   }
 
   Widget _buildRestaurantCard(Restaurant restaurant) {
+    // Calculate distance if we have current position
+    final distance = _currentPosition != null
+        ? Geolocator.distanceBetween(
+            _currentPosition!.latitude,
+            _currentPosition!.longitude,
+            restaurant.latitude,
+            restaurant.longitude,
+          )
+        : null;
+
+    if (distance != null) {
+      debugPrint(
+          'Current position: ${_currentPosition!.latitude}, ${_currentPosition!.longitude}');
+      debugPrint(
+          'Restaurant position: ${restaurant.latitude}, ${restaurant.longitude}');
+      debugPrint('Calculated distance: $distance meters');
+    }
+
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          if (restaurant.photoReference.isNotEmpty)
-            Image.network(
-              // TODO: Replace with actual photo URL from Google Places
-              'https://via.placeholder.com/400x200',
-              width: double.infinity,
-              height: 200,
-              fit: BoxFit.cover,
-            ),
           Padding(
             padding: const EdgeInsets.all(16),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  restaurant.name,
-                  style: Theme.of(context).textTheme.titleLarge,
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Expanded(
+                      child: Text(
+                        restaurant.name,
+                        style: Theme.of(context).textTheme.titleLarge,
+                      ),
+                    ),
+                    if (distance != null)
+                      Text(
+                        _formatDistance(distance),
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                              color: Theme.of(context).colorScheme.secondary,
+                            ),
+                      ),
+                  ],
                 ),
                 const SizedBox(height: 8),
                 Row(
                   children: [
-                    Icon(
+                    const Icon(
                       Icons.star,
                       size: 20,
                       color: Colors.amber,
@@ -162,23 +200,32 @@ class _ExploreScreenState extends State<ExploreScreen> {
                         style: Theme.of(context).textTheme.bodyMedium,
                       ),
                     ],
+                    if (restaurant.isOpen) ...[
+                      const SizedBox(width: 16),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 2,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.green.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                        child: Text(
+                          'Open',
+                          style:
+                              Theme.of(context).textTheme.bodySmall?.copyWith(
+                                    color: Colors.green,
+                                  ),
+                        ),
+                      ),
+                    ],
                   ],
                 ),
                 const SizedBox(height: 8),
                 Text(
                   restaurant.address,
                   style: Theme.of(context).textTheme.bodyMedium,
-                ),
-                const SizedBox(height: 8),
-                Wrap(
-                  spacing: 8,
-                  children: restaurant.types
-                      .map((type) => Chip(
-                            label: Text(type),
-                            backgroundColor:
-                                Theme.of(context).colorScheme.surfaceVariant,
-                          ))
-                      .toList(),
                 ),
               ],
             ),

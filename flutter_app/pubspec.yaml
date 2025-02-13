@@ -43,6 +43,7 @@ dependencies:
   cloud_firestore: ^4.13.6
   cloud_functions: ^4.5.8
   geolocator: ^10.1.0
+  shared_preferences: ^2.2.2
   image_picker: ^1.0.7
   video_player: ^2.9.2
   path_provider: ^2.1.5

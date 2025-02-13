@@ -647,6 +647,8 @@ exports.getRestaurantRecommendations = onCall({
       throw new Error('Missing required parameters: latitude, longitude, or tags');
     }
 
+    console.log('Request location:', { latitude, longitude });
+
     // 2. Use provided radius or default to 1500 meters
     const searchRadius = radius || 1500;
 
@@ -682,6 +684,8 @@ exports.getRestaurantRecommendations = onCall({
             },
           });
 
+          console.log(`Raw Places API response for tag ${tag}:`, JSON.stringify(response.data, null, 2));
+
           // Merge results across pagination
           let mergedResults = response.data.results || [];
 
@@ -700,27 +704,25 @@ exports.getRestaurantRecommendations = onCall({
           }
 
           // Format the data with matchedTag for sorting logic
-          return mergedResults.map((place) => {
-            const photoRef = place.photos?.[0]?.photo_reference;
-            const photoUrl = photoRef 
-              ? `https://maps.googleapis.com/maps/api/place/photo?maxwidth=400&photo_reference=${photoRef}&key=${apiKey}`
-              : '';
-
-            return {
+          const formattedResults = mergedResults.map((place) => {
+            const formatted = {
               id: place.place_id,
               name: place.name || '',
               rating: place.rating || 0,
               address: place.vicinity || '',
               latitude: place.geometry?.location?.lat || 0,
               longitude: place.geometry?.location?.lng || 0,
-              photoReference: photoRef || '',
-              photoUrl: photoUrl,
+              photoReference: place.photos?.[0]?.photo_reference || '',
               types: place.types || [],
               isOpen: place.opening_hours?.open_now || false,
               priceLevel: place.price_level ?? null,
               matchedTag: tag,
             };
+            console.log(`Formatted restaurant data for ${place.name}:`, formatted);
+            return formatted;
           });
+
+          return formattedResults;
         } catch (err) {
           console.error(`Error fetching restaurants for tag ${tag}:`, err);
           return []; // Return empty array to continue gracefully
@@ -763,6 +765,7 @@ exports.getRestaurantRecommendations = onCall({
       .slice(0, 20)
       .map(({ matchedTag, ...rest }) => rest);
 
+    console.log('Final results to be sent to client:', finalResults);
     return finalResults;
   } catch (error) {
     console.error('Error in getRestaurantRecommendations:', error);
