@@ -13,50 +13,70 @@ class NotificationService {
   static final GlobalKey<NavigatorState> navigatorKey =
       GlobalKey<NavigatorState>();
 
+  // Static flag to indicate if a permission request is already in progress
+  static bool _isPermissionRequestInProgress = false;
+
   // Initialize notification settings and request permissions
   Future<void> initialize() async {
-    // Set up background message handler
-    FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
-
-    // Request permission for iOS
-    NotificationSettings settings = await _messaging.requestPermission(
-      alert: true,
-      badge: true,
-      sound: true,
-      provisional: false,
-    );
-
-    print('Notification permission status: ${settings.authorizationStatus}');
-
-    // Handle incoming messages when app is in foreground
-    FirebaseMessaging.onMessage.listen(_handleForegroundMessage);
-
-    // Handle notification tap when app is in background or terminated
-    FirebaseMessaging.onMessageOpenedApp.listen(_handleBackgroundMessage);
-
-    // Update FCM token when it changes
-    _messaging.onTokenRefresh.listen((token) {
-      print('FCM Token refreshed: $token');
-      _updateToken(token);
-    });
-
-    // Get initial token
-    String? token = await _messaging.getToken();
-
-    // If no token exists but we have permission, force a refresh
-    if (token == null &&
-        settings.authorizationStatus == AuthorizationStatus.authorized) {
-      print('No token found, forcing refresh...');
-      await _messaging.deleteToken();
-      token = await _messaging.getToken();
+    // If a permission request is already happening, skip this call
+    if (_isPermissionRequestInProgress) {
+      print('Permission request already in progress, skipping initialization.');
+      return;
     }
 
-    if (token != null) {
-      print('Initial FCM Token: $token');
-      await _updateToken(token);
-    } else {
-      print(
-          'Failed to get FCM token. Authorization status: ${settings.authorizationStatus}');
+    _isPermissionRequestInProgress = true;
+    try {
+      // Set up background message handler
+      FirebaseMessaging.onBackgroundMessage(
+          _firebaseMessagingBackgroundHandler);
+
+      // Request notification permissions using FirebaseMessaging
+      NotificationSettings settings = await _messaging.requestPermission(
+        alert: true,
+        announcement: false,
+        badge: true,
+        carPlay: false,
+        criticalAlert: false,
+        provisional: false,
+        sound: true,
+      );
+      print('Notification permission status: ${settings.authorizationStatus}');
+
+      // Handle incoming messages when app is in foreground
+      FirebaseMessaging.onMessage.listen(_handleForegroundMessage);
+
+      // Handle notification tap when app is in background or terminated
+      FirebaseMessaging.onMessageOpenedApp.listen(_handleBackgroundMessage);
+
+      // Update FCM token when it changes
+      _messaging.onTokenRefresh.listen((token) {
+        print('FCM Token refreshed: $token');
+        _updateToken(token);
+      });
+
+      // Get initial token
+      String? token = await _messaging.getToken();
+
+      // If no token exists but we have permission, force a refresh
+      if (token == null &&
+          settings.authorizationStatus == AuthorizationStatus.authorized) {
+        print('No token found, forcing refresh...');
+        await _messaging.deleteToken();
+        token = await _messaging.getToken();
+      }
+
+      if (token != null) {
+        print('Initial FCM Token: $token');
+        await _updateToken(token);
+      } else {
+        print(
+            'Failed to get FCM token. Authorization status: ${settings.authorizationStatus}');
+      }
+    } catch (e) {
+      print('Failed to initialize notifications: $e');
+    } finally {
+      // Reset the flag so future calls can proceed
+      _isPermissionRequestInProgress = false;
     }
   }
 
