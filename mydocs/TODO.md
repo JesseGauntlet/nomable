@@ -68,6 +68,14 @@ Wednesday 2/12
 2) Content moderation (done)
 3) Restaurant Recommendations?
 
+Thursday 2/13
+1) Restaurant recomendations (location based API and google places)
+2) Caching, sorting
+3) UI fixes
+
+Friday 2/14
+1) Feed algorithm
+
 Beyond
 1) Feed algorithm
 2) Explore page / AI features

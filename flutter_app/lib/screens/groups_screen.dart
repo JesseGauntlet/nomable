@@ -130,11 +130,17 @@ class _GroupsScreenState extends State<GroupsScreen> {
               return Card(
                 margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 child: ListTile(
-                  title: Text(group['name'] ?? 'Unnamed Group'),
+                  title: Text(
+                      '${group['name'] ?? 'Unnamed Group'} (${(group['members'] as List<dynamic>).length})'),
                   subtitle: Text(
-                    group['currentConsensusFood']?.isEmpty ?? true
-                        ? 'No consensus yet'
-                        : 'Current craving: ${group["currentConsensusFood"]}',
+                    (group['consensusReached'] == true &&
+                            group['topChoice'] != null &&
+                            (group['topChoice'] as String).isNotEmpty)
+                        ? 'Today\'s Choice: ${group["topChoice"]}'
+                        : (group['currentConsensusFood']?.isNotEmpty ?? false)
+                            ? 'Current craving: ${group["currentConsensusFood"]}'
+                            : '',
+                    style: const TextStyle(fontSize: 14),
                   ),
                   trailing: isCreator
                       ? IconButton(

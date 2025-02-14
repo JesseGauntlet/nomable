@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../services/notification_service.dart';
+import '../services/user_service.dart';
 
 class GroupPreferencesScreen extends StatefulWidget {
   final String groupId;
@@ -271,42 +272,70 @@ class GroupPreferencesScreenState extends State<GroupPreferencesScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Daily swipes progress section
-                  const Text(
-                    'Daily swipes progress',
-                    style: TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  // Member progress list
-                  ...memberData.entries.map((entry) {
-                    final memberId = entry.key;
-                    final memberName = entry.value['name'] as String;
-                    final swipeCount = entry.value['swipeCount'] as int;
-                    final progress =
-                        swipeCount / 10; // Assuming 10 is max swipes
-
-                    return Padding(
-                      padding: const EdgeInsets.only(bottom: 8.0),
+                  // Check if all users have completed their swipes
+                  if (memberData.values.every((member) =>
+                      (member['swipeCount'] as int) >=
+                      UserService.maxDailySwipes)) ...[
+                    // Show first choice prominently
+                    Center(
                       child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(memberName),
-                          const SizedBox(height: 4),
-                          LinearProgressIndicator(
-                            value: progress,
-                            backgroundColor: Colors.grey[200],
-                            valueColor: AlwaysStoppedAnimation<Color>(
-                              progress >= 1.0 ? Colors.green : Colors.blue,
+                          const Text(
+                            'Today\'s Choice',
+                            style: TextStyle(
+                              fontSize: 24,
+                              fontWeight: FontWeight.w500,
                             ),
                           ),
-                          Text('$swipeCount/10 swipes'),
+                          const SizedBox(height: 16),
+                          Text(
+                            groupPreferences.entries.first.key,
+                            style: const TextStyle(
+                              fontSize: 48,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
                         ],
                       ),
-                    );
-                  }).toList(),
+                    ),
+                  ] else ...[
+                    // Show progress bars with updated label
+                    const Text(
+                      'Swipe progress',
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    // Member progress list
+                    ...memberData.entries.map((entry) {
+                      final memberId = entry.key;
+                      final memberName = entry.value['name'] as String;
+                      final swipeCount = entry.value['swipeCount'] as int;
+                      final progress = swipeCount / UserService.maxDailySwipes;
+
+                      return Padding(
+                        padding: const EdgeInsets.only(bottom: 8.0),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(memberName),
+                            const SizedBox(height: 4),
+                            LinearProgressIndicator(
+                              value: progress,
+                              backgroundColor: Colors.grey[200],
+                              valueColor: AlwaysStoppedAnimation<Color>(
+                                progress >= 1.0 ? Colors.green : Colors.blue,
+                              ),
+                            ),
+                            Text(
+                                '$swipeCount/${UserService.maxDailySwipes} swipes'),
+                          ],
+                        ),
+                      );
+                    }),
+                  ],
                   const SizedBox(height: 16),
                   Center(
                     child: ElevatedButton.icon(
